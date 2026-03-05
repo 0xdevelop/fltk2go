@@ -11,3 +11,9 @@
 build/
 
 CMake/
+
+.CLAUDE.md
+.claude/
+
+logs/
+*.log

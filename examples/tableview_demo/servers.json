@@ -1,0 +1,92 @@
+{
+  "servers": [
+    {
+      "id": "1",
+      "name": "服务器1",
+      "ip": "192.168.1.101",
+      "cpu": "80%",
+      "memory": "65%",
+      "disk": "45%",
+      "status": "online",
+      "uptime": "23h 45m",
+      "type": "web"
+    },
+    {
+      "id": "2",
+      "name": "服务器2",
+      "ip": "192.168.1.102",
+      "cpu": "45%",
+      "memory": "75%",
+      "disk": "60%",
+      "status": "online",
+      "uptime": "12h 30m",
+      "type": "database"
+    },
+    {
+      "id": "3",
+      "name": "服务器3",
+      "ip": "192.168.1.103",
+      "cpu": "10%",
+      "memory": "30%",
+      "disk": "25%",
+      "status": "idle",
+      "uptime": "5h 15m",
+      "type": "backup"
+    },
+    {
+      "id": "4",
+      "name": "服务器4",
+      "ip": "192.168.1.104",
+      "cpu": "95%",
+      "memory": "85%",
+      "disk": "75%",
+      "status": "warning",
+      "uptime": "48h 0m",
+      "type": "application"
+    },
+    {
+      "id": "5",
+      "name": "服务器5",
+      "ip": "192.168.1.105",
+      "cpu": "30%",
+      "memory": "50%",
+      "disk": "35%",
+      "status": "online",
+      "uptime": "8h 0m",
+      "type": "cdn"
+    },
+    {
+      "id": "6",
+      "name": "服务器6",
+      "ip": "192.168.1.106",
+      "cpu": "0%",
+      "memory": "10%",
+      "disk": "15%",
+      "status": "offline",
+      "uptime": "0h 0m",
+      "type": "storage"
+    },
+    {
+      "id": "7",
+      "name": "服务器7",
+      "ip": "192.168.1.107",
+      "cpu": "65%",
+      "memory": "70%",
+      "disk": "55%",
+      "status": "online",
+      "uptime": "18h 20m",
+      "type": "api"
+    },
+    {
+      "id": "8",
+      "name": "服务器8",
+      "ip": "192.168.1.108",
+      "cpu": "50%",
+      "memory": "60%",
+      "disk": "40%",
+      "status": "online",
+      "uptime": "10h 30m",
+      "type": "monitoring"
+    }
+  ]
+}

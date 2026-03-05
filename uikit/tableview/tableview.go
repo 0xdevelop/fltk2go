@@ -1,17 +1,19 @@
 package tableview
 
+import "github.com/0xYeah/fltk2go/uikit/view"
+
 type TableView struct {
-	table BridgeTable
+	table      BridgeTable
+	v          view.UIView
+	customDraw func(row, x, y, w, h int)
 
 	dataSource DataSource
 	delegate   Delegate
 
 	defaultRowHeight int
 
-	// 复用池：reuseID -> cells
 	reusePool map[string][]*TableViewCell
-	// 可见缓存（可选）：row -> cell
-	visible map[int]*TableViewCell
+	visible   map[int]*TableViewCell
 }
 
 func New(x, y, w, h int) (*TableView, error) {
@@ -26,13 +28,19 @@ func New(x, y, w, h int) (*TableView, error) {
 		reusePool:        map[string][]*TableViewCell{},
 		visible:          map[int]*TableViewCell{},
 	}
+	tv.v.BindRaw(bt.Widget())
 
-	// 绑定底层回调
 	tv.table.SetDrawCellHandler(tv.onDrawCell)
 	tv.table.SetEventHandler(tv.onEvent)
 
 	return tv, nil
 }
+
+// View implements view.Viewable — enables root.AddSubview(tv).
+func (tv *TableView) View() *view.UIView { return &tv.v }
+
+// Raw returns the underlying BridgeTable (e.g. for win.Raw().Add(tv.Raw().Widget())).
+func (tv *TableView) Raw() BridgeTable { return tv.table }
 
 func (tv *TableView) SetDataSource(ds DataSource) { tv.dataSource = ds }
 func (tv *TableView) SetDelegate(d Delegate)      { tv.delegate = d }
@@ -41,6 +49,17 @@ func (tv *TableView) SetDefaultRowHeight(h int) {
 	if h > 0 {
 		tv.defaultRowHeight = h
 	}
+}
+
+// SetCustomDraw sets a custom cell-drawing function called for every visible row.
+// When set, it replaces the default DataSource-driven cell drawing.
+func (tv *TableView) SetCustomDraw(fn func(row, x, y, w, h int)) {
+	tv.customDraw = fn
+}
+
+// GetSelectedRow returns the 0-based index of the selected row, or -1 if none.
+func (tv *TableView) GetSelectedRow() int {
+	return tv.table.GetSelectedRow()
 }
 
 func (tv *TableView) Dequeue(reuseID string) *TableViewCell {
@@ -68,7 +87,6 @@ func (tv *TableView) ReloadData() {
 		return
 	}
 
-	// 回收旧可见 cell
 	for row, cell := range tv.visible {
 		_ = row
 		tv.Enqueue(cell)
@@ -83,14 +101,16 @@ func (tv *TableView) ReloadData() {
 	tv.table.Redraw()
 }
 
-// ============ callbacks ============
+// ── callbacks ──────────────────────────────────────────────────────────────
 
-// onDrawCell：每行绘制时取 cell 并交给业务层配置
 func (tv *TableView) onDrawCell(row int, x, y, w, h int) {
+	if tv.customDraw != nil {
+		tv.customDraw(row, x, y, w, h)
+		return
+	}
 	if tv.dataSource == nil {
 		return
 	}
-
 	cell, ok := tv.visible[row]
 	if !ok {
 		cell = tv.dataSource.CellForRow(tv, row)
@@ -100,20 +120,10 @@ func (tv *TableView) onDrawCell(row int, x, y, w, h int) {
 		cell.row = row
 		tv.visible[row] = cell
 	}
-
-	// 这里是“绘制型 cell”的默认策略：TableViewCell 自身不画，
-	// 交由你桥接层/绘图 API 在 dataSource 的 cell 内完成（比如设置文本、颜色等）
-	//
-	// 如果你想做“UIKit 风格 cell.layoutSubviews + 子控件”，
-	// 后续可以在这里把 cell 的 ContentView frame 设置为 (x,y,w,h) 并 show/hide。
-	_ = x
-	_ = y
-	_ = w
-	_ = h
+	_, _, _, _ = x, y, w, h
 }
 
 func (tv *TableView) onEvent(row int) bool {
-	// 点击选中之类事件：交给 delegate
 	if tv.delegate != nil && row >= 0 {
 		tv.delegate.DidSelectRow(tv, row)
 		return true

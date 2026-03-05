@@ -45,4 +45,28 @@ func (l *UILabel) SetTextColor(c uint) {
 	}
 }
 
+func (l *UILabel) SetFont(font fltk_bridge.Font) {
+	if l.raw != nil {
+		l.raw.SetLabelFont(font)
+	}
+}
+
+func (l *UILabel) SetAlignment(align fltk_bridge.Align) {
+	if l.raw != nil {
+		l.raw.SetAlign(align)
+	}
+}
+
+func (l *UILabel) SetFrame(boxType fltk_bridge.BoxType) {
+	if l.raw != nil {
+		l.raw.SetBox(boxType)
+	}
+}
+
+func (l *UILabel) SetBackgroundColor(rgb uint) {
+	if l.raw != nil {
+		l.raw.SetColor(fltk_bridge.Color(rgb))
+	}
+}
+
 func (l *UILabel) Raw() *fltk_bridge.Box { return l.raw }

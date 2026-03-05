@@ -43,4 +43,46 @@ func (b *UIButton) OnTouchUpInside(cb func()) {
 	}
 }
 
+func (b *UIButton) SetTitleColor(rgb uint) {
+	if b.raw != nil {
+		b.raw.SetLabelColor(fltk_bridge.Color(rgb))
+	}
+}
+
 func (b *UIButton) Raw() *fltk_bridge.Button { return b.raw }
+
+// ButtonType 按钮类型
+type ButtonType int
+
+const (
+	SystemButton   ButtonType = iota // 普通按钮
+	CheckboxButton                   // 复选框按钮
+	RadioButton                      // 单选按钮
+	ToggleButton                     // 切换按钮
+)
+
+// NewUIButtonWithType 创建指定类型的按钮
+func NewUIButtonWithType(r *foundation.Rect, title string, buttonType ButtonType) *UIButton {
+	if r == nil {
+		r = &foundation.Rect{X: 0, Y: 0, Width: 120, Height: 36}
+	}
+
+	var rawBtn *fltk_bridge.Button
+	switch buttonType {
+	case CheckboxButton:
+		cb := fltk_bridge.NewCheckButton(r.X, r.Y, r.Width, r.Height, title)
+		rawBtn = &cb.Button
+	case RadioButton:
+		rb := fltk_bridge.NewRadioButton(r.X, r.Y, r.Width, r.Height, title)
+		rawBtn = &rb.Button
+	case ToggleButton:
+		tb := fltk_bridge.NewToggleButton(r.X, r.Y, r.Width, r.Height, title)
+		rawBtn = &tb.Button
+	default:
+		rawBtn = fltk_bridge.NewButton(r.X, r.Y, r.Width, r.Height, title)
+	}
+
+	b := &UIButton{raw: rawBtn}
+	b.v.BindRaw(rawBtn)
+	return b
+}

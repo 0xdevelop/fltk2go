@@ -1,0 +1,173 @@
+package input
+
+import (
+	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xYeah/fltk2go/uikit/view"
+)
+
+// Input 输入框组件
+type Input struct {
+	// 底层FLTK输入框
+	raw fltk_bridge.Widget
+	
+	// 基础视图
+	v view.UIView
+}
+
+// InputType 输入框类型
+type InputType int
+
+const (
+	// TextInput 文本输入框
+	TextInput InputType = iota
+	// IntInput 整数输入框
+	IntInput
+	// FloatInput 浮点数输入框
+	FloatInput
+)
+
+// New 创建一个新的输入框
+func New(x, y, width, height int, placeholder string) *Input {
+	return NewWithType(x, y, width, height, placeholder, TextInput)
+}
+
+// NewWithType 创建一个指定类型的输入框
+func NewWithType(x, y, width, height int, placeholder string, inputType InputType) *Input {
+	var input fltk_bridge.Widget
+	
+	switch inputType {
+	case IntInput:
+		input = fltk_bridge.NewIntInput(x, y, width, height, placeholder)
+	case FloatInput:
+		input = fltk_bridge.NewFloatInput(x, y, width, height, placeholder)
+	default:
+		input = fltk_bridge.NewInput(x, y, width, height, placeholder)
+	}
+	
+	in := &Input{
+		raw: input,
+	}
+	
+	// 绑定底层widget到view
+	in.v.BindRaw(input)
+	
+	return in
+}
+
+// SetText 设置输入框文本
+func (in *Input) SetText(text string) {
+	if in.raw != nil {
+		if input, ok := in.raw.(interface{ SetValue(value string) bool }); ok {
+			input.SetValue(text)
+		}
+	}
+}
+
+// Text 获取输入框文本
+func (in *Input) Text() string {
+	if in.raw != nil {
+		if input, ok := in.raw.(interface{ Value() string }); ok {
+			return input.Value()
+		}
+	}
+	return ""
+}
+
+// SetPlaceholder 设置占位文本
+func (in *Input) SetPlaceholder(placeholder string) {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ SetLabel(label string) }); ok {
+			widget.SetLabel(placeholder)
+		}
+	}
+}
+
+// Placeholder 获取占位文本
+func (in *Input) Placeholder() string {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ Label() string }); ok {
+			return widget.Label()
+		}
+	}
+	return ""
+}
+
+// SetFontSize 设置字体大小
+func (in *Input) SetFontSize(size int) {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ SetLabelSize(size int) }); ok {
+			widget.SetLabelSize(size)
+		}
+	}
+}
+
+// SetFont 设置字体
+func (in *Input) SetFont(font fltk_bridge.Font) {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ SetLabelFont(font fltk_bridge.Font) }); ok {
+			widget.SetLabelFont(font)
+		}
+	}
+}
+
+// SetTextColor 设置文本颜色
+func (in *Input) SetTextColor(color uint) {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ SetLabelColor(col fltk_bridge.Color) }); ok {
+			widget.SetLabelColor(fltk_bridge.Color(color))
+		}
+	}
+}
+
+// SetBackgroundColor 设置背景颜色
+func (in *Input) SetBackgroundColor(color uint) {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ SetColor(c fltk_bridge.Color) }); ok {
+			widget.SetColor(fltk_bridge.Color(color))
+		}
+	}
+}
+
+// SetEnabled 设置是否可用
+func (in *Input) SetEnabled(enabled bool) {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ Activate() }); ok {
+			if enabled {
+				widget.Activate()
+			} else {
+				if widget, ok := in.raw.(interface{ Deactivate() }); ok {
+					widget.Deactivate()
+				}
+			}
+		}
+	}
+}
+
+// IsEnabled 获取是否可用
+func (in *Input) IsEnabled() bool {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ IsActive() bool }); ok {
+			return widget.IsActive()
+		}
+	}
+	return false
+}
+
+// OnChange 设置文本变化回调
+func (in *Input) OnChange(callback func()) {
+	if in.raw != nil {
+		if widget, ok := in.raw.(interface{ SetCallback(f func()) }); ok {
+			widget.SetCallback(callback)
+		}
+	}
+}
+
+// View 返回基础视图，实现view.Viewable接口
+func (in *Input) View() *view.UIView {
+	return &in.v
+}
+
+// Raw 返回底层FLTK输入框
+func (in *Input) Raw() fltk_bridge.Widget {
+	return in.raw
+}
