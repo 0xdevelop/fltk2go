@@ -13,6 +13,7 @@ build/
 CMake/
 
 .CLAUDE.md
+CLAUDE.md
 .claude/
 
 logs/
