@@ -139,8 +139,13 @@ func main() {
 	// Tile covers the whole window and provides the draggable split handle.
 	tile := fltk_bridge.NewTile(0, 0, winW, winH)
 
+<<<<<<< HEAD
 	// ── Left panel: example list ──────────────────────────────────────────
 	leftGrp := fltk_bridge.NewGroup(0, 0, initSplit, winH)
+=======
+	btn := button.NewUIButton(&foundation.Rect{X: 20, Y: 80, Width: 160, Height: 44}, "Click Me +1")
+	btn.SetBackgroundColor(BLUE)
+>>>>>>> 4503a0e0cb40858b7e1ed0d83b62b0f417af04a2
 
 	listHdr := fltk_bridge.NewBox(fltk_bridge.UP_BOX, 0, 0, initSplit, 32, "Examples")
 	listHdr.SetLabelFont(fltk_bridge.HELVETICA_BOLD)
