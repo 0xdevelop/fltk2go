@@ -31,6 +31,52 @@ go run fltk_build/fltk_build.go fltk_build/manifest.go
 go get github.com/0xYeah/fltk2go@latest
 ```
 
+UIKit-style controls are available from the root `uikit` package as a facade, while
+existing subpackage imports remain supported.
+
+```go
+package main
+
+import (
+	"runtime"
+
+	"github.com/0xYeah/fltk2go"
+	"github.com/0xYeah/fltk2go/foundation"
+	"github.com/0xYeah/fltk2go/uikit"
+)
+
+func main() {
+	runtime.LockOSThread()
+
+	win := uikit.NewUIWindow(420, 220, "UIKit Controls")
+	root := win.RootView()
+
+	slider := uikit.NewUISlider(&foundation.Rect{X: 24, Y: 40, Width: 360, Height: 28})
+	slider.SetMinimumValue(0)
+	slider.SetMaximumValue(100)
+	slider.SetValue(50)
+	root.AddSubview(slider)
+
+	progress := uikit.NewUIProgressView(&foundation.Rect{X: 24, Y: 84, Width: 360, Height: 22})
+	progress.SetMinimumValue(0)
+	progress.SetMaximumValue(100)
+	progress.SetProgress(50)
+	root.AddSubview(progress)
+
+	slider.OnValueChanged(func(value float64) {
+		progress.SetProgress(value)
+	})
+
+	win.Show()
+	fltk2go.Run()
+}
+```
+
+Current UIKit wrappers include `UILabel`, `UIButton`, `Input`, `UITableView`,
+`UISlider`, `UIProgressView`, `UISwitch`, `UIScrollView`, `UISplitView`,
+`UIStackView`, and `UITextView`, plus root facade dialog helpers
+`uikit.Message`, `uikit.Alert`, and `uikit.Choice`.
+
 # 4. Dir Tree
 ```shell
 fltk2go/

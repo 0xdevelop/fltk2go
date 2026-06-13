@@ -1,0 +1,134 @@
+package uikit
+
+import (
+	"github.com/0xYeah/fltk2go/foundation"
+	"github.com/0xYeah/fltk2go/uikit/button"
+	"github.com/0xYeah/fltk2go/uikit/dialog"
+	"github.com/0xYeah/fltk2go/uikit/input"
+	"github.com/0xYeah/fltk2go/uikit/label"
+	"github.com/0xYeah/fltk2go/uikit/progress"
+	"github.com/0xYeah/fltk2go/uikit/scrollview"
+	"github.com/0xYeah/fltk2go/uikit/slider"
+	"github.com/0xYeah/fltk2go/uikit/splitview"
+	"github.com/0xYeah/fltk2go/uikit/stackview"
+	switchview "github.com/0xYeah/fltk2go/uikit/switch"
+	"github.com/0xYeah/fltk2go/uikit/tableview"
+	"github.com/0xYeah/fltk2go/uikit/textview"
+	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xYeah/fltk2go/uikit/window"
+)
+
+type UIView = view.UIView
+type Viewable = view.Viewable
+type UIWindow = window.UIWindow
+type UILabel = label.UILabel
+type UIButton = button.UIButton
+type ButtonType = button.ButtonType
+type Input = input.Input
+type InputType = input.InputType
+type UITableView = tableview.TableView
+type UITableViewCell = tableview.TableViewCell
+type TableViewDataSource = tableview.DataSource
+type TableViewDelegate = tableview.Delegate
+type UISlider = slider.UISlider
+type UIProgressView = progress.UIProgressView
+type UISwitch = switchview.UISwitch
+type UIScrollView = scrollview.UIScrollView
+type UISplitView = splitview.SplitView
+type SplitOrientation = splitview.Orientation
+type UIStackView = stackview.UIStackView
+type StackAxis = stackview.Axis
+type UITextView = textview.UITextView
+
+const (
+	SystemButton   = button.SystemButton
+	CheckboxButton = button.CheckboxButton
+	RadioButton    = button.RadioButton
+	ToggleButton   = button.ToggleButton
+
+	TextInput  = input.TextInput
+	IntInput   = input.IntInput
+	FloatInput = input.FloatInput
+
+	AxisVertical   = stackview.AxisVertical
+	AxisHorizontal = stackview.AxisHorizontal
+
+	SplitHorizontal = splitview.Horizontal
+	SplitVertical   = splitview.Vertical
+)
+
+func NewUIWindow(width, height int, title string) *UIWindow {
+	return window.NewUIWindow(width, height, title)
+}
+
+func NewWindowWithRect(rect *foundation.Rect, title string) *UIWindow {
+	return window.NewWindowWithRect(rect, title)
+}
+
+func NewUILabel(r *foundation.Rect, text string) *UILabel {
+	return label.NewUILabel(r, text)
+}
+
+func NewUIButton(r *foundation.Rect, title string) *UIButton {
+	return button.NewUIButton(r, title)
+}
+
+func NewUIButtonWithType(r *foundation.Rect, title string, buttonType ButtonType) *UIButton {
+	return button.NewUIButtonWithType(r, title, buttonType)
+}
+
+func NewInput(x, y, width, height int, placeholder string) *Input {
+	return input.New(x, y, width, height, placeholder)
+}
+
+func NewInputWithType(x, y, width, height int, placeholder string, inputType InputType) *Input {
+	return input.NewWithType(x, y, width, height, placeholder, inputType)
+}
+
+func NewUITableView(x, y, width, height int) (*UITableView, error) {
+	return tableview.New(x, y, width, height)
+}
+
+func NewUITableViewCell(reuseID string) *UITableViewCell {
+	return tableview.NewCell(reuseID)
+}
+
+func NewUISlider(r *foundation.Rect) *UISlider {
+	return slider.NewUISlider(r)
+}
+
+func NewUIProgressView(r *foundation.Rect) *UIProgressView {
+	return progress.NewUIProgressView(r)
+}
+
+func NewUISwitch(r *foundation.Rect) *UISwitch {
+	return switchview.NewUISwitch(r)
+}
+
+func NewUIScrollView(r *foundation.Rect) *UIScrollView {
+	return scrollview.NewUIScrollView(r)
+}
+
+func NewUISplitView(x, y, width, height int, orientation SplitOrientation) *UISplitView {
+	return splitview.New(x, y, width, height, orientation)
+}
+
+func NewUIStackView(r *foundation.Rect, axis StackAxis) *UIStackView {
+	return stackview.NewUIStackView(r, axis)
+}
+
+func NewUITextView(r *foundation.Rect) *UITextView {
+	return textview.NewUITextView(r)
+}
+
+func Message(title, message string) {
+	dialog.Message(title, message)
+}
+
+func Alert(title, message string) {
+	dialog.Alert(title, message)
+}
+
+func Choice(message string, options ...string) int {
+	return dialog.Choice(message, options...)
+}

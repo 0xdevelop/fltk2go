@@ -1,0 +1,123 @@
+package slider
+
+import (
+	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xYeah/fltk2go/foundation"
+	"github.com/0xYeah/fltk2go/uikit/view"
+)
+
+type UISlider struct {
+	v   view.UIView
+	raw *fltk_bridge.Slider
+}
+
+func NewUISlider(r *foundation.Rect) *UISlider {
+	if r == nil {
+		r = &foundation.Rect{X: 0, Y: 0, Width: 160, Height: 28}
+	}
+
+	raw := fltk_bridge.NewSlider(r.X, r.Y, r.Width, r.Height)
+	raw.SetType(fltk_bridge.HOR_NICE_SLIDER)
+	raw.SetMinimum(0)
+	raw.SetMaximum(1)
+	raw.SetStep(0.01)
+
+	s := &UISlider{raw: raw}
+	s.v.BindRaw(raw)
+	return s
+}
+
+func (s *UISlider) View() *view.UIView {
+	if s == nil {
+		return nil
+	}
+	return &s.v
+}
+
+func (s *UISlider) Raw() *fltk_bridge.Slider {
+	if s == nil {
+		return nil
+	}
+	return s.raw
+}
+
+func (s *UISlider) SetMinimumValue(v float64) {
+	if s != nil && s.raw != nil {
+		s.raw.SetMinimum(v)
+	}
+}
+
+func (s *UISlider) SetMinimum(v float64) {
+	s.SetMinimumValue(v)
+}
+
+func (s *UISlider) SetMaximumValue(v float64) {
+	if s != nil && s.raw != nil {
+		s.raw.SetMaximum(v)
+	}
+}
+
+func (s *UISlider) SetMaximum(v float64) {
+	s.SetMaximumValue(v)
+}
+
+func (s *UISlider) SetValue(v float64) {
+	if s != nil && s.raw != nil {
+		s.raw.SetValue(v)
+	}
+}
+
+func (s *UISlider) Value() float64 {
+	if s == nil || s.raw == nil {
+		return 0
+	}
+	return s.raw.Value()
+}
+
+func (s *UISlider) SetStep(v float64) {
+	if s != nil && s.raw != nil {
+		s.raw.SetStep(v)
+	}
+}
+
+// OnValueChanged invokes cb with the current slider value whenever FLTK reports
+// a value-change event.
+func (s *UISlider) OnValueChanged(cb func(float64)) {
+	if s != nil && s.raw != nil {
+		s.raw.SetCallbackCondition(fltk_bridge.WhenChanged)
+		s.raw.SetCallback(func() {
+			if cb != nil {
+				cb(s.raw.Value())
+			}
+		})
+	}
+}
+
+// OnChange is a convenience variant for callers that do not need the value.
+func (s *UISlider) OnChange(cb func()) {
+	if s != nil && s.raw != nil {
+		s.raw.SetCallbackCondition(fltk_bridge.WhenChanged)
+		s.raw.SetCallback(func() {
+			if cb != nil {
+				cb()
+			}
+		})
+	}
+}
+
+func (s *UISlider) SetType(t fltk_bridge.SliderType) {
+	if s != nil && s.raw != nil {
+		s.raw.SetType(t)
+	}
+}
+
+func (s *UISlider) SetVertical(vertical bool) {
+	if s == nil || s.raw == nil {
+		return
+	}
+	if vertical {
+		s.raw.SetType(fltk_bridge.VERT_NICE_SLIDER)
+		return
+	}
+	s.raw.SetType(fltk_bridge.HOR_NICE_SLIDER)
+}
