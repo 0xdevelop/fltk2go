@@ -138,9 +138,16 @@ func (m *awakeMap) fetchCallback(id uintptr) func() {
 	delete(m.awakeMap, id)
 	return fn
 }
+func (m *awakeMap) unregister(id uintptr) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	delete(m.awakeMap, id)
+}
 func (m *awakeMap) invoke(id uintptr) {
 	fn := m.fetchCallback(id)
-	fn()
+	if fn != nil {
+		fn()
+	}
 }
 
 //export _go_awakeHandler
@@ -150,7 +157,11 @@ func _go_awakeHandler(id C.uintptr_t) {
 
 func Awake(fn func()) bool {
 	awakeId := globalAwakeMap.register(fn)
-	return C.go_fltk_awake(C.uintptr_t(awakeId)) == 0
+	if C.go_fltk_awake(C.uintptr_t(awakeId)) == 0 {
+		return true
+	}
+	globalAwakeMap.unregister(awakeId)
+	return false
 }
 func AwakeNullMessage() {
 	C.go_fltk_awake_null_message()

@@ -48,6 +48,7 @@ type AutomationNode struct {
 	Name       string            `json:"name,omitempty"`
 	Label      string            `json:"label,omitempty"`
 	Text       string            `json:"text,omitempty"`
+	Actions    []string          `json:"actions,omitempty"`
 	Enabled    bool              `json:"enabled"`
 	Visible    bool              `json:"visible"`
 	Bounds     AutomationBounds  `json:"bounds"`
@@ -229,6 +230,12 @@ func (v *UIView) AutomationSnapshot() AutomationNode {
 		node.Label = widgetLabel(v.raw)
 		node.Enabled = widgetActive(v.raw)
 		node.Visible = widgetVisible(v.raw)
+	}
+	if v.automation.click != nil {
+		node.Actions = append(node.Actions, "click")
+	}
+	if v.automation.setText != nil {
+		node.Actions = append(node.Actions, "set_text")
 	}
 	if v.automation.getText != nil {
 		if text, ok := v.automation.getText(); ok {

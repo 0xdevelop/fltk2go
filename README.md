@@ -107,7 +107,7 @@ go run ./counter/main.go
 go run ./slider_progress/main.go
 ```
 
-### Debug automation / MCP StreamableHTTP
+### Debug automation / MCP JSON-RPC HTTP
 
 fltk2go now includes an opt-in debug automation layer for native FLTK/UIKit apps. It is designed for agents and test runners that need stable control inspection/actions without fragile screen-coordinate clicking.
 
@@ -115,13 +115,18 @@ Debug-only behavior:
 
 - The HTTP/MCP server starts only when `FLTK2GO_AUTOMATION_DEBUG=1` is set.
 - Building with `-tags release` compiles a disabled stub, so release binaries cannot expose the debug server.
-- Automation actions call Go handlers directly where possible instead of moving the physical mouse.
+- Automation actions are dispatched onto the FLTK event loop via `Fl::awake()` and call Go handlers directly where possible instead of moving the physical mouse.
+- Bind to `127.0.0.1` unless you are inside a trusted CI network. The debug server has no authentication and can trigger application actions.
+- `Config.DirectActions` is only for unit tests without an FLTK event loop; real debug apps should leave it false.
 
 ```go
 import "github.com/0xYeah/fltk2go/uikit/automation"
 
-srv, err := automation.StartDebugServer(automation.Config{Addr: "127.0.0.1:8765"})
-if err == nil {
+if automation.Enabled() {
+	srv, err := automation.StartDebugServer(automation.Config{Addr: "127.0.0.1:8765"})
+	if err != nil {
+		panic(err)
+	}
 	defer srv.Close()
 }
 ```
@@ -135,12 +140,53 @@ startButton.View().
 	SetAutomationRole("button")
 ```
 
+Use globally unique, stable IDs such as `screen.section.control`. Do not use localized button text, random values, or unstable row indexes as IDs. `UIButton` automatically exposes role/name and click actions after `OnTouchUpInside`; `Input` automatically exposes role/name and text get/set handlers.
+
+Run a debug build:
+
+```shell
+FLTK2GO_AUTOMATION_DEBUG=1 go run .
+```
+
 HTTP endpoints:
 
 - `GET /debug/automation/snapshot` returns registered controls with id, role, name, label, text, bounds, visible/enabled state, and custom properties.
 - `POST /debug/automation/click` with `{"id":"app.start"}` invokes the debug click action.
 - `POST /debug/automation/set_text` with `{"id":"app.input","text":"hello"}` updates text-capable controls.
-- `POST /mcp` exposes StreamableHTTP-style JSON-RPC tools: `fltk_snapshot`, `fltk_click`, `fltk_set_text`, and `fltk_wait`.
+- `POST /mcp` exposes MCP-style JSON-RPC-over-HTTP tools: `fltk_snapshot`, `fltk_click`, `fltk_set_text`, and `fltk_wait`. It is a simple POST endpoint, not a full SSE streaming transport.
+
+Agent workflow for Hermes/Codex/Claude Code:
+
+```shell
+# inspect current UI tree; nodes include actions like ["click"] or ["set_text"]
+curl -s http://127.0.0.1:8765/debug/automation/snapshot
+
+# fill a field and click a semantic button
+curl -s -X POST http://127.0.0.1:8765/debug/automation/set_text \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"login.username","text":"yerikokay"}'
+curl -s -X POST http://127.0.0.1:8765/debug/automation/click \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"login.submit"}'
+```
+
+MCP-style JSON-RPC examples:
+
+```shell
+curl -s http://127.0.0.1:8765/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"agent","version":"dev"}}}'
+
+curl -s http://127.0.0.1:8765/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"fltk_snapshot","arguments":{}}}'
+
+curl -s http://127.0.0.1:8765/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"fltk_click","arguments":{"id":"app.start"}}}'
+```
+
+Tool results include both `structuredContent` for agents and `content[0].text` containing the same JSON for simple clients. `fltk_wait` currently waits for automation ID registration only; follow actions with another `fltk_snapshot` to verify visual/application state.
 
 ### UIKit 代码片段示范
 

@@ -2,14 +2,19 @@
 
 package automation
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 var ErrDisabled = errors.New("fltk2go automation debug server is disabled in release builds")
 
 type Server struct{}
 
 type Config struct {
-	Addr string
+	Addr          string
+	DirectActions bool
+	ActionTimeout time.Duration
 }
 
 func Enabled() bool { return false }

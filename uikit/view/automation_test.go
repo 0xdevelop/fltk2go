@@ -36,6 +36,9 @@ func TestAutomationRegistryActionsAndSnapshot(t *testing.T) {
 	if found.Role != "button" || found.Name != "Demo Button" || found.Properties["semantic"] != "primary" {
 		t.Fatalf("unexpected snapshot: %#v", *found)
 	}
+	if len(found.Actions) != 1 || found.Actions[0] != "click" {
+		t.Fatalf("snapshot actions = %#v, want click", found.Actions)
+	}
 }
 
 func TestAutomationSetText(t *testing.T) {
@@ -54,5 +57,33 @@ func TestAutomationSetText(t *testing.T) {
 	}
 	if got := v.AutomationSnapshot().Text; got != "hello" {
 		t.Fatalf("snapshot text = %q, want hello", got)
+	}
+	if actions := v.AutomationSnapshot().Actions; len(actions) != 1 || actions[0] != "set_text" {
+		t.Fatalf("snapshot actions = %#v, want set_text", actions)
+	}
+}
+
+func TestAutomationIDLifecycleAndChildren(t *testing.T) {
+	parent := (&UIView{}).SetAutomationID("demo.parent")
+	child := (&UIView{}).SetAutomationID("demo.child")
+	defer parent.SetAutomationID("")
+	defer child.SetAutomationID("")
+
+	parent.AddAutomationChild(child).AddAutomationChild(child)
+	if node := parent.AutomationSnapshot(); len(node.Children) != 1 || node.Children[0].ID != "demo.child" {
+		t.Fatalf("children snapshot = %#v", node.Children)
+	}
+
+	child.SetAutomationID("demo.child.renamed")
+	if _, ok := AutomationLookup("demo.child"); ok {
+		t.Fatal("old automation id still registered after rename")
+	}
+	if _, ok := AutomationLookup("demo.child.renamed"); !ok {
+		t.Fatal("new automation id not registered after rename")
+	}
+
+	child.SetAutomationID("")
+	if _, ok := AutomationLookup("demo.child.renamed"); ok {
+		t.Fatal("automation id still registered after clear")
 	}
 }
