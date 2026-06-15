@@ -19,4 +19,4 @@ CLAUDE.md
 logs/
 *.log
 
-/tmp/
+tmp/
