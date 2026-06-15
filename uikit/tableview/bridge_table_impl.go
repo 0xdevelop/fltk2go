@@ -18,6 +18,7 @@ func newBridgeTableImpl(x, y, w, h int) *bridgeTableImpl {
 
 	// 设置初始属性
 	table.SetColumnCount(1)                       // 默认1列，可根据需要调整
+	table.SetColumnWidthAll(w)                    // 单列默认占满可用宽度，避免示例行挤在左侧
 	table.SetRowHeightAll(30)                     // 默认行高30
 	table.EnableColumnHeaders()                   // 启用列头
 	table.SetColumnHeaderHeight(30)               // 列头高度
@@ -51,7 +52,7 @@ func newBridgeTableImpl(x, y, w, h int) *bridgeTableImpl {
 
 // SetRows 设置表格行数
 func (bt *bridgeTableImpl) SetRows(rows int) {
-	bt.table.SetRowCount(rows + 1) // +1 用于表头
+	bt.table.SetRowCount(rows)
 }
 
 // Redraw 重绘表格

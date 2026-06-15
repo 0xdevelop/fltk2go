@@ -14,12 +14,16 @@ import (
 )
 
 const (
-	BLUE   uint = 0x42A5F500
-	GRAY   uint = 0x75757500
-	ORANGE uint = 0xFFA72600
-	GREEN  uint = 0x4CAF5000
-	RED    uint = 0xF4433600
-	WHITE  uint = 0xFFFFFFFF
+	Primary     uint = 0x2563EB00
+	Slate       uint = 0x1E293B00
+	Muted       uint = 0x64748B00
+	Panel       uint = 0xF8FAFC00
+	Card        uint = 0xFFFFFF00
+	Line        uint = 0xE2E8F000
+	Green       uint = 0x22C55E00
+	Red         uint = 0xEF444400
+	ButtonMuted uint = 0x47556900
+	White       uint = 0xFFFFFFFF
 )
 
 type Item struct {
@@ -34,11 +38,11 @@ type ItemDataSource struct {
 
 func NewItemDataSource() *ItemDataSource {
 	return &ItemDataSource{items: []Item{
-		{ID: "1", Name: "Item 1", Value: "Value 1"},
-		{ID: "2", Name: "Item 2", Value: "Value 2"},
-		{ID: "3", Name: "Item 3", Value: "Value 3"},
-		{ID: "4", Name: "Item 4", Value: "Value 4"},
-		{ID: "5", Name: "Item 5", Value: "Value 5"},
+		{ID: "1", Name: "Navigation", Value: "Ready"},
+		{ID: "2", Name: "Forms", Value: "Validated"},
+		{ID: "3", Name: "Buttons", Value: "Interactive"},
+		{ID: "4", Name: "Table rows", Value: "Reusable"},
+		{ID: "5", Name: "Layout", Value: "Spacious"},
 	}}
 }
 
@@ -58,85 +62,121 @@ type ItemDelegate struct{}
 func (d *ItemDelegate) DidSelectRow(tv *tableview.TableView, row int) {
 	print("Selected row:", row, "\n")
 }
-func (d *ItemDelegate) RowHeight(tv *tableview.TableView, row int) int { return 40 }
+func (d *ItemDelegate) RowHeight(tv *tableview.TableView, row int) int { return 48 }
 
 func main() {
 	runtime.LockOSThread()
 
-	win := window.NewUIWindow(1000, 700, "FLTK2Go Comprehensive Example")
+	win := window.NewUIWindow(1060, 740, "FLTK2Go Comprehensive Example")
 	root := win.RootView()
 
-	title := label.NewUILabel(&foundation.Rect{X: 50, Y: 20, Width: 900, Height: 40}, "FLTK2Go UI Components Example")
-	title.SetFontSize(24)
+	background := label.NewUILabel(&foundation.Rect{X: 0, Y: 0, Width: 1060, Height: 740}, "")
+	background.SetBackgroundColor(Panel)
+	background.SetFrame(fltk_bridge.FLAT_BOX)
+	root.AddSubview(background)
+
+	title := label.NewUILabel(&foundation.Rect{X: 56, Y: 30, Width: 948, Height: 34}, "FLTK2Go Component Gallery")
+	title.SetFontSize(25)
 	title.SetFont(fltk_bridge.HELVETICA_BOLD)
-	title.SetAlignment(fltk_bridge.ALIGN_CENTER)
+	title.SetTextColor(Slate)
 	root.AddSubview(title)
 
-	description := label.NewUILabel(&foundation.Rect{X: 50, Y: 70, Width: 900, Height: 30}, "This example demonstrates various UI components including buttons, labels, and table view.")
+	description := label.NewUILabel(&foundation.Rect{X: 56, Y: 68, Width: 948, Height: 28}, "A cleaner desktop demo: grouped controls, spacious rows, and semantic action colors.")
 	description.SetFontSize(14)
-	description.SetTextColor(GRAY)
+	description.SetTextColor(Muted)
 	root.AddSubview(description)
 
-	buttonTitle := label.NewUILabel(&foundation.Rect{X: 50, Y: 120, Width: 400, Height: 30}, "Button Examples:")
-	buttonTitle.SetFontSize(16)
+	buttonCard := label.NewUILabel(&foundation.Rect{X: 56, Y: 124, Width: 948, Height: 150}, "")
+	buttonCard.SetBackgroundColor(Card)
+	buttonCard.SetFrame(fltk_bridge.ROUNDED_BOX)
+	root.AddSubview(buttonCard)
+
+	buttonTitle := label.NewUILabel(&foundation.Rect{X: 88, Y: 150, Width: 420, Height: 28}, "Button states")
+	buttonTitle.SetFontSize(18)
 	buttonTitle.SetFont(fltk_bridge.HELVETICA_BOLD)
+	buttonTitle.SetTextColor(Slate)
 	root.AddSubview(buttonTitle)
 
-	systemBtn := button.NewUIButton(&foundation.Rect{X: 50, Y: 160, Width: 120, Height: 36}, "System Button")
-	systemBtn.SetBackgroundColor(BLUE)
-	systemBtn.SetTitleColor(WHITE)
+	buttonHint := label.NewUILabel(&foundation.Rect{X: 88, Y: 180, Width: 780, Height: 24}, "Minimum 44px height, clear gaps, and one primary visual action per row.")
+	buttonHint.SetFontSize(13)
+	buttonHint.SetTextColor(Muted)
+	root.AddSubview(buttonHint)
+
+	systemBtn := button.NewUIButton(&foundation.Rect{X: 88, Y: 214, Width: 150, Height: 44}, "Primary")
+	systemBtn.SetBackgroundColor(Primary)
+	systemBtn.SetTitleColor(White)
 	root.AddSubview(systemBtn)
 
-	checkBtn := button.NewUIButtonWithType(&foundation.Rect{X: 200, Y: 160, Width: 120, Height: 36}, "Checkbox", button.CheckboxButton)
+	checkBtn := button.NewUIButtonWithType(&foundation.Rect{X: 264, Y: 214, Width: 150, Height: 44}, "Checkbox", button.CheckboxButton)
 	root.AddSubview(checkBtn)
 
-	radioBtn := button.NewUIButtonWithType(&foundation.Rect{X: 350, Y: 160, Width: 120, Height: 36}, "Radio", button.RadioButton)
+	radioBtn := button.NewUIButtonWithType(&foundation.Rect{X: 440, Y: 214, Width: 150, Height: 44}, "Radio", button.RadioButton)
 	root.AddSubview(radioBtn)
 
-	toggleBtn := button.NewUIButtonWithType(&foundation.Rect{X: 500, Y: 160, Width: 120, Height: 36}, "Toggle", button.ToggleButton)
+	toggleBtn := button.NewUIButtonWithType(&foundation.Rect{X: 616, Y: 214, Width: 150, Height: 44}, "Toggle", button.ToggleButton)
 	root.AddSubview(toggleBtn)
 
-	tableTitle := label.NewUILabel(&foundation.Rect{X: 50, Y: 220, Width: 900, Height: 30}, "Table View Example:")
-	tableTitle.SetFontSize(16)
+	tableCard := label.NewUILabel(&foundation.Rect{X: 56, Y: 304, Width: 948, Height: 342}, "")
+	tableCard.SetBackgroundColor(Card)
+	tableCard.SetFrame(fltk_bridge.ROUNDED_BOX)
+	root.AddSubview(tableCard)
+
+	tableTitle := label.NewUILabel(&foundation.Rect{X: 88, Y: 330, Width: 500, Height: 28}, "TableView data source")
+	tableTitle.SetFontSize(18)
 	tableTitle.SetFont(fltk_bridge.HELVETICA_BOLD)
+	tableTitle.SetTextColor(Slate)
 	root.AddSubview(tableTitle)
 
-	tv, _ := tableview.New(50, 260, 900, 300)
+	tableHint := label.NewUILabel(&foundation.Rect{X: 88, Y: 360, Width: 780, Height: 24}, "Custom row rendering with stronger contrast and better scan rhythm.")
+	tableHint.SetFontSize(13)
+	tableHint.SetTextColor(Muted)
+	root.AddSubview(tableHint)
+
+	tv, _ := tableview.New(88, 396, 884, 218)
 	dataSource := NewItemDataSource()
 	delegate := &ItemDelegate{}
 	tv.SetDataSource(dataSource)
 	tv.SetDelegate(delegate)
 
 	tv.SetCustomDraw(func(row int, x, y, w, h int) {
+		if row < 0 || row >= len(dataSource.items) {
+			return
+		}
 		item := dataSource.items[row]
-		fltk_bridge.SetDrawColor(fltk_bridge.WHITE)
-		fltk_bridge.DrawRectfWithColor(x, y, w, h, fltk_bridge.WHITE)
-		fltk_bridge.SetDrawColor(fltk_bridge.LIGHT2)
+		bg := fltk_bridge.Color(0xFFFFFF00)
+		if row%2 == 1 {
+			bg = fltk_bridge.Color(0xF8FAFC00)
+		}
+		fltk_bridge.DrawRectfWithColor(x, y, w, h, bg)
+		fltk_bridge.SetDrawColor(fltk_bridge.Color(Line))
 		fltk_bridge.DrawRect(x, y, w, h)
-		fltk_bridge.SetDrawColor(fltk_bridge.BLACK)
-		fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA, 14)
-		fltk_bridge.Draw(item.Name, x+10, y, w/2-10, h, fltk_bridge.ALIGN_LEFT|fltk_bridge.ALIGN_INSIDE)
-		fltk_bridge.Draw(item.Value, x+w/2, y, w/2-10, h, fltk_bridge.ALIGN_LEFT|fltk_bridge.ALIGN_INSIDE)
+		fltk_bridge.SetDrawColor(fltk_bridge.Color(Slate))
+		fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA_BOLD, 14)
+		fltk_bridge.Draw(item.Name, x+18, y, w/2-24, h, fltk_bridge.ALIGN_LEFT|fltk_bridge.ALIGN_INSIDE)
+		fltk_bridge.SetDrawColor(fltk_bridge.Color(Muted))
+		fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA, 13)
+		fltk_bridge.Draw(item.Value, x+w/2, y, w/2-18, h, fltk_bridge.ALIGN_LEFT|fltk_bridge.ALIGN_INSIDE)
 	})
 	root.AddSubview(tv)
+	tv.ReloadData()
 
-	addBtn := button.NewUIButton(&foundation.Rect{X: 50, Y: 590, Width: 120, Height: 36}, "Add Item")
-	addBtn.SetBackgroundColor(GREEN)
-	addBtn.SetTitleColor(WHITE)
+	addBtn := button.NewUIButton(&foundation.Rect{X: 56, Y: 670, Width: 150, Height: 44}, "Add item")
+	addBtn.SetBackgroundColor(Green)
+	addBtn.SetTitleColor(White)
 
-	removeBtn := button.NewUIButton(&foundation.Rect{X: 200, Y: 590, Width: 120, Height: 36}, "Remove Item")
-	removeBtn.SetBackgroundColor(RED)
-	removeBtn.SetTitleColor(WHITE)
+	removeBtn := button.NewUIButton(&foundation.Rect{X: 226, Y: 670, Width: 150, Height: 44}, "Remove")
+	removeBtn.SetBackgroundColor(Red)
+	removeBtn.SetTitleColor(White)
 
-	refreshBtn := button.NewUIButton(&foundation.Rect{X: 350, Y: 590, Width: 120, Height: 36}, "Refresh")
-	refreshBtn.SetBackgroundColor(GRAY)
-	refreshBtn.SetTitleColor(WHITE)
+	refreshBtn := button.NewUIButton(&foundation.Rect{X: 396, Y: 670, Width: 150, Height: 44}, "Refresh")
+	refreshBtn.SetBackgroundColor(ButtonMuted)
+	refreshBtn.SetTitleColor(White)
 
 	addBtn.OnTouchUpInside(func() {
 		newItem := Item{
 			ID:    strconv.Itoa(len(dataSource.items) + 1),
 			Name:  "Item " + strconv.Itoa(len(dataSource.items)+1),
-			Value: "Value " + strconv.Itoa(len(dataSource.items)+1),
+			Value: "New row",
 		}
 		dataSource.items = append(dataSource.items, newItem)
 		tv.ReloadData()
