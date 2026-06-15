@@ -55,7 +55,9 @@ func (ds *ItemDataSource) CellForRow(tv *tableview.TableView, row int) *tablevie
 
 type ItemDelegate struct{}
 
-func (d *ItemDelegate) DidSelectRow(tv *tableview.TableView, row int) { print("Selected row:", row, "\n") }
+func (d *ItemDelegate) DidSelectRow(tv *tableview.TableView, row int) {
+	print("Selected row:", row, "\n")
+}
 func (d *ItemDelegate) RowHeight(tv *tableview.TableView, row int) int { return 40 }
 
 func main() {

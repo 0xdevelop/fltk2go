@@ -45,7 +45,12 @@ func NewWindowWithRect(rect *foundation.Rect, title string) *UIWindow {
 	return u
 }
 
-func (w *UIWindow) RootView() *view.UIView { return w.root }
+func (w *UIWindow) RootView() *view.UIView {
+	if w == nil {
+		return nil
+	}
+	return w.root
+}
 
 func (w *UIWindow) Show() {
 	if w == nil || w.raw == nil {
@@ -54,4 +59,9 @@ func (w *UIWindow) Show() {
 	w.raw.Show()
 }
 
-func (w *UIWindow) Raw() *fltk_bridge.Window { return w.raw }
+func (w *UIWindow) Raw() *fltk_bridge.Window {
+	if w == nil {
+		return nil
+	}
+	return w.raw
+}

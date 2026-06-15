@@ -24,15 +24,34 @@ type UIView struct {
 
 // BindHost：框架内部使用，为 view 绑定父容器
 func (v *UIView) BindHost(host Container) {
+	if v == nil {
+		return
+	}
 	v.host = host
 }
 
 // BindRaw：框架内部使用，为 view 绑定底层 widget
 func (v *UIView) BindRaw(raw fltk_bridge.Widget) {
+	if v == nil {
+		return
+	}
 	v.raw = raw
 }
 
-func (v *UIView) Raw() fltk_bridge.Widget { return v.raw }
+func (v *UIView) Raw() fltk_bridge.Widget {
+	if v == nil {
+		return nil
+	}
+	return v.raw
+}
+
+// Superview returns the container currently hosting this view, if any.
+func (v *UIView) Superview() Container {
+	if v == nil {
+		return nil
+	}
+	return v.host
+}
 
 // AddSubview：iOS 语义。核心就一件事：host.Add(child.raw)
 func (v *UIView) AddSubview(child Viewable) {
@@ -44,4 +63,14 @@ func (v *UIView) AddSubview(child Viewable) {
 		return
 	}
 	v.host.Add(cv.raw)
+	cv.BindHost(v.host)
+}
+
+// RemoveFromSuperview removes the view's raw widget from its current host.
+func (v *UIView) RemoveFromSuperview() {
+	if v == nil || v.host == nil || v.raw == nil {
+		return
+	}
+	v.host.Remove(v.raw)
+	v.host = nil
 }

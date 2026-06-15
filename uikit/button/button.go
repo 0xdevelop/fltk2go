@@ -23,33 +23,43 @@ func NewUIButton(r *foundation.Rect, title string) *UIButton {
 	return b
 }
 
-func (b *UIButton) View() *view.UIView { return &b.v }
+func (b *UIButton) View() *view.UIView {
+	if b == nil {
+		return nil
+	}
+	return &b.v
+}
 
 func (b *UIButton) SetTitle(s string) {
-	if b.raw != nil {
+	if b != nil && b.raw != nil {
 		b.raw.SetLabel(s)
 	}
 }
 
 func (b *UIButton) SetBackgroundColor(rgb uint) {
-	if b.raw != nil {
+	if b != nil && b.raw != nil {
 		b.raw.SetColor(fltk_bridge.Color(rgb))
 	}
 }
 
 func (b *UIButton) OnTouchUpInside(cb func()) {
-	if b.raw != nil {
+	if b != nil && b.raw != nil {
 		b.raw.SetCallback(cb)
 	}
 }
 
 func (b *UIButton) SetTitleColor(rgb uint) {
-	if b.raw != nil {
+	if b != nil && b.raw != nil {
 		b.raw.SetLabelColor(fltk_bridge.Color(rgb))
 	}
 }
 
-func (b *UIButton) Raw() *fltk_bridge.Button { return b.raw }
+func (b *UIButton) Raw() *fltk_bridge.Button {
+	if b == nil {
+		return nil
+	}
+	return b.raw
+}
 
 // ButtonType 按钮类型
 type ButtonType int
