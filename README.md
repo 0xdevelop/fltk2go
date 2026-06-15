@@ -107,6 +107,41 @@ go run ./counter/main.go
 go run ./slider_progress/main.go
 ```
 
+### Debug automation / MCP StreamableHTTP
+
+fltk2go now includes an opt-in debug automation layer for native FLTK/UIKit apps. It is designed for agents and test runners that need stable control inspection/actions without fragile screen-coordinate clicking.
+
+Debug-only behavior:
+
+- The HTTP/MCP server starts only when `FLTK2GO_AUTOMATION_DEBUG=1` is set.
+- Building with `-tags release` compiles a disabled stub, so release binaries cannot expose the debug server.
+- Automation actions call Go handlers directly where possible instead of moving the physical mouse.
+
+```go
+import "github.com/0xYeah/fltk2go/uikit/automation"
+
+srv, err := automation.StartDebugServer(automation.Config{Addr: "127.0.0.1:8765"})
+if err == nil {
+	defer srv.Close()
+}
+```
+
+Add stable IDs to controls through their `UIView`:
+
+```go
+startButton.View().
+	SetAutomationID("app.start").
+	SetAutomationName("Start mapping").
+	SetAutomationRole("button")
+```
+
+HTTP endpoints:
+
+- `GET /debug/automation/snapshot` returns registered controls with id, role, name, label, text, bounds, visible/enabled state, and custom properties.
+- `POST /debug/automation/click` with `{"id":"app.start"}` invokes the debug click action.
+- `POST /debug/automation/set_text` with `{"id":"app.input","text":"hello"}` updates text-capable controls.
+- `POST /mcp` exposes StreamableHTTP-style JSON-RPC tools: `fltk_snapshot`, `fltk_click`, `fltk_set_text`, and `fltk_wait`.
+
 ### UIKit 代码片段示范
 
 通过 `uikit` 快速创建一个现代化的窗口和组件：

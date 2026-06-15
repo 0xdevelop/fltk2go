@@ -54,6 +54,13 @@ func NewWithType(x, y, width, height int, placeholder string, inputType InputTyp
 
 	// 绑定底层widget到view
 	in.v.BindRaw(input)
+	in.v.SetAutomationRole("textbox").SetAutomationName(placeholder)
+	in.v.SetAutomationTextHandlers(func(text string) error {
+		in.SetText(text)
+		return nil
+	}, func() (string, bool) {
+		return in.Text(), true
+	})
 
 	return in
 }

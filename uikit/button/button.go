@@ -20,6 +20,7 @@ func NewUIButton(r *foundation.Rect, title string) *UIButton {
 
 	b := &UIButton{raw: btn}
 	b.v.BindRaw(btn)
+	b.v.SetAutomationRole("button").SetAutomationName(title)
 	return b
 }
 
@@ -33,6 +34,7 @@ func (b *UIButton) View() *view.UIView {
 func (b *UIButton) SetTitle(s string) {
 	if b != nil && b.raw != nil {
 		b.raw.SetLabel(s)
+		b.v.SetAutomationName(s)
 	}
 }
 
@@ -45,6 +47,12 @@ func (b *UIButton) SetBackgroundColor(rgb uint) {
 func (b *UIButton) OnTouchUpInside(cb func()) {
 	if b != nil && b.raw != nil {
 		b.raw.SetCallback(cb)
+		b.v.OnAutomationClick(func() error {
+			if cb != nil {
+				cb()
+			}
+			return nil
+		})
 	}
 }
 
@@ -63,6 +71,19 @@ func (b *UIButton) Raw() *fltk_bridge.Button {
 
 // ButtonType 按钮类型
 type ButtonType int
+
+func (t ButtonType) String() string {
+	switch t {
+	case CheckboxButton:
+		return "checkbox"
+	case RadioButton:
+		return "radio"
+	case ToggleButton:
+		return "toggle"
+	default:
+		return "system"
+	}
+}
 
 const (
 	SystemButton   ButtonType = iota // 普通按钮
@@ -94,5 +115,7 @@ func NewUIButtonWithType(r *foundation.Rect, title string, buttonType ButtonType
 
 	b := &UIButton{raw: rawBtn}
 	b.v.BindRaw(rawBtn)
+	b.v.SetAutomationRole("button").SetAutomationName(title)
+	b.v.SetAutomationProperty("buttonType", buttonType.String())
 	return b
 }

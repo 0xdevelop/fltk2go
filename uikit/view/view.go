@@ -21,6 +21,7 @@ type UIView struct {
 	raw           fltk_bridge.Widget
 	host          Container
 	eventHandlers map[fltk_bridge.Event]func(fltk_bridge.Event) bool
+	automation    automationState
 }
 
 func (v *UIView) View() *UIView {
@@ -113,10 +114,12 @@ func (v *UIView) AddSubview(child Viewable) {
 	if container, ok := v.raw.(Container); ok {
 		container.Add(cv.raw)
 		cv.BindHost(container)
+		v.AddAutomationChild(child)
 	} else if v.host != nil {
 		// 回退逻辑，添加给 host
 		v.host.Add(cv.raw)
 		cv.BindHost(v.host)
+		v.AddAutomationChild(child)
 	}
 }
 
