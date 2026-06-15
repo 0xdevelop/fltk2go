@@ -9,73 +9,128 @@ import (
 	"github.com/0xYeah/fltk2go/uikit/button"
 	"github.com/0xYeah/fltk2go/uikit/input"
 	"github.com/0xYeah/fltk2go/uikit/label"
+	"github.com/0xYeah/fltk2go/uikit/view"
 	"github.com/0xYeah/fltk2go/uikit/window"
 )
 
 const (
-	BLUE   uint = 0x42A5F500
-	GRAY   uint = 0x75757500
-	ORANGE uint = 0xFFA72600
-	GREEN  uint = 0x4CAF5000
-	RED    uint = 0xF4433600
-	WHITE  uint = 0xFFFFFFFF
+	Primary     uint = 0x2563EB00
+	PrimaryDark uint = 0x1E293B00
+	MutedText   uint = 0x64748B00
+	Panel       uint = 0xF8FAFC00
+	Card        uint = 0xFFFFFF00
+	Field       uint = 0xF1F5F900
+	Border      uint = 0xCBD5E100
+	Orange      uint = 0xF9731600
+	White       uint = 0xFFFFFFFF
 )
+
+func fieldLabel(root *view.UIView, x, y int, text string) {
+	l := label.NewUILabel(&foundation.Rect{X: x, Y: y, Width: 300, Height: 20}, text)
+	l.SetFontSize(12)
+	l.SetTextColor(MutedText)
+	l.SetFont(fltk_bridge.HELVETICA_BOLD)
+	root.AddSubview(l)
+}
 
 func main() {
 	runtime.LockOSThread()
 
-	win := window.NewUIWindow(800, 600, "Input Example")
+	win := window.NewUIWindow(900, 640, "Input Example")
 	root := win.RootView()
 
-	title := label.NewUILabel(&foundation.Rect{X: 50, Y: 20, Width: 700, Height: 40}, "Input Example")
+	background := label.NewUILabel(&foundation.Rect{X: 0, Y: 0, Width: 900, Height: 640}, "")
+	background.SetBackgroundColor(Panel)
+	background.SetFrame(fltk_bridge.FLAT_BOX)
+	root.AddSubview(background)
+
+	title := label.NewUILabel(&foundation.Rect{X: 56, Y: 30, Width: 788, Height: 34}, "Input Playground")
 	title.SetFontSize(24)
 	title.SetFont(fltk_bridge.HELVETICA_BOLD)
-	title.SetAlignment(fltk_bridge.ALIGN_CENTER)
+	title.SetTextColor(PrimaryDark)
 	root.AddSubview(title)
 
-	textInput := input.New(100, 100, 300, 36, "Enter text here...")
+	description := label.NewUILabel(&foundation.Rect{X: 56, Y: 68, Width: 788, Height: 26}, "Readable form spacing, explicit labels, and immediate preview feedback.")
+	description.SetFontSize(14)
+	description.SetTextColor(MutedText)
+	root.AddSubview(description)
+
+	formCard := label.NewUILabel(&foundation.Rect{X: 56, Y: 120, Width: 390, Height: 420}, "")
+	formCard.SetBackgroundColor(Card)
+	formCard.SetFrame(fltk_bridge.ROUNDED_BOX)
+	root.AddSubview(formCard)
+
+	previewCard := label.NewUILabel(&foundation.Rect{X: 482, Y: 120, Width: 362, Height: 420}, "")
+	previewCard.SetBackgroundColor(Card)
+	previewCard.SetFrame(fltk_bridge.ROUNDED_BOX)
+	root.AddSubview(previewCard)
+
+	formTitle := label.NewUILabel(&foundation.Rect{X: 84, Y: 146, Width: 320, Height: 28}, "Form fields")
+	formTitle.SetFontSize(17)
+	formTitle.SetFont(fltk_bridge.HELVETICA_BOLD)
+	formTitle.SetTextColor(PrimaryDark)
+	root.AddSubview(formTitle)
+
+	fieldLabel(root, 84, 190, "TEXT")
+	textInput := input.New(84, 212, 320, 38, "")
 	textInput.SetFontSize(14)
+	textInput.SetBackgroundColor(Field)
 	root.AddSubview(textInput)
 
-	intInput := input.NewWithType(100, 150, 300, 36, "Enter integer here...", input.IntInput)
+	fieldLabel(root, 84, 264, "INTEGER")
+	intInput := input.NewWithType(84, 286, 320, 38, "", input.IntInput)
 	intInput.SetFontSize(14)
+	intInput.SetBackgroundColor(Field)
 	root.AddSubview(intInput)
 
-	floatInput := input.NewWithType(100, 200, 300, 36, "Enter float here...", input.FloatInput)
+	fieldLabel(root, 84, 338, "FLOAT")
+	floatInput := input.NewWithType(84, 360, 320, 38, "", input.FloatInput)
 	floatInput.SetFontSize(14)
+	floatInput.SetBackgroundColor(Field)
 	root.AddSubview(floatInput)
 
-	secretInput := input.New(100, 250, 300, 36, "Enter password here...")
+	fieldLabel(root, 84, 412, "PASSWORD")
+	secretInput := input.New(84, 434, 320, 38, "")
 	secretInput.SetFontSize(14)
+	secretInput.SetBackgroundColor(Field)
 	root.AddSubview(secretInput)
 
-	multilineInput := input.New(100, 300, 300, 100, "Enter multiline text here...")
+	fieldLabel(root, 510, 190, "MULTILINE NOTE")
+	multilineInput := input.New(510, 212, 296, 94, "")
 	multilineInput.SetFontSize(14)
+	multilineInput.SetBackgroundColor(Field)
 	root.AddSubview(multilineInput)
 
-	displayLabel := label.NewUILabel(&foundation.Rect{X: 450, Y: 100, Width: 250, Height: 200}, "Input values will appear here")
+	previewTitle := label.NewUILabel(&foundation.Rect{X: 510, Y: 146, Width: 296, Height: 28}, "Live preview")
+	previewTitle.SetFontSize(17)
+	previewTitle.SetFont(fltk_bridge.HELVETICA_BOLD)
+	previewTitle.SetTextColor(PrimaryDark)
+	root.AddSubview(previewTitle)
+
+	displayLabel := label.NewUILabel(&foundation.Rect{X: 510, Y: 332, Width: 296, Height: 144}, "Input values will appear here")
 	displayLabel.SetFontSize(14)
-	displayLabel.SetAlignment(fltk_bridge.ALIGN_LEFT)
-	displayLabel.SetBackgroundColor(0xF5F5F500)
-	displayLabel.SetFrame(fltk_bridge.ENGRAVED_BOX)
+	displayLabel.SetAlignment(fltk_bridge.ALIGN_LEFT | fltk_bridge.ALIGN_INSIDE)
+	displayLabel.SetBackgroundColor(0xF8FAFC00)
+	displayLabel.SetFrame(fltk_bridge.ROUNDED_BOX)
+	displayLabel.SetTextColor(PrimaryDark)
 	root.AddSubview(displayLabel)
 
-	updateBtn := button.NewUIButton(&foundation.Rect{X: 100, Y: 420, Width: 120, Height: 36}, "Update Display")
-	updateBtn.SetBackgroundColor(BLUE)
-	updateBtn.SetTitleColor(WHITE)
+	updateBtn := button.NewUIButton(&foundation.Rect{X: 84, Y: 560, Width: 170, Height: 44}, "Update preview")
+	updateBtn.SetBackgroundColor(Primary)
+	updateBtn.SetTitleColor(White)
 	root.AddSubview(updateBtn)
 
-	clearBtn := button.NewUIButton(&foundation.Rect{X: 250, Y: 420, Width: 120, Height: 36}, "Clear All")
-	clearBtn.SetBackgroundColor(ORANGE)
-	clearBtn.SetTitleColor(WHITE)
+	clearBtn := button.NewUIButton(&foundation.Rect{X: 274, Y: 560, Width: 132, Height: 44}, "Clear")
+	clearBtn.SetBackgroundColor(Orange)
+	clearBtn.SetTitleColor(White)
 	root.AddSubview(clearBtn)
 
 	updateBtn.OnTouchUpInside(func() {
-		displayText := "Text Input: " + textInput.Text() + "\n"
-		displayText += "Int Input: " + intInput.Text() + "\n"
-		displayText += "Float Input: " + floatInput.Text() + "\n"
-		displayText += "Password Input: " + secretInput.Text() + "\n"
-		displayText += "Multiline Input: " + multilineInput.Text()
+		displayText := "Text: " + textInput.Text() + "\n\n"
+		displayText += "Integer: " + intInput.Text() + "\n"
+		displayText += "Float: " + floatInput.Text() + "\n"
+		displayText += "Password: " + secretInput.Text() + "\n\n"
+		displayText += "Note: " + multilineInput.Text()
 		displayLabel.SetText(displayText)
 	})
 
