@@ -26,3 +26,6 @@ auto_coding/
 
 .trae/
 main
+
+tmp/
+temp/
