@@ -16,6 +16,7 @@
 
 ### Build Artifacts (构建产物)
 - Debug 过程中 `build` 出来的临时二进制可执行文件（如 `*.exe`、macOS 下的二进制文件），**用完即刻删除**，禁止提交到版本库，保持工作区干净。
+- 任何临时文件、实验目录、构建探针都必须放在项目根目录的 `tmp/` 下；禁止使用 `/tmp`、`/private/tmp` 或系统临时目录。
 
 ## AI Workflow Guidelines
 ### AI Assistant Workflow
