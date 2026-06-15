@@ -6,6 +6,17 @@ import (
 	"github.com/0xYeah/fltk2go/uikit/view"
 )
 
+type UIScrollViewScrollType = fltk_bridge.ScrollType
+
+var (
+	ScrollHorizontal       = fltk_bridge.SCROLL_HORIZONTAL
+	ScrollVertical         = fltk_bridge.SCROLL_VERTICAL
+	ScrollBoth             = fltk_bridge.SCROLL_BOTH
+	ScrollHorizontalAlways = fltk_bridge.SCROLL_HORIZONTAL_ALWAYS
+	ScrollVerticalAlways   = fltk_bridge.SCROLL_VERTICAL_ALWAYS
+	ScrollBothAlways       = fltk_bridge.SCROLL_BOTH_ALWAYS
+)
+
 type UIScrollView struct {
 	v   view.UIView
 	raw *fltk_bridge.Scroll
@@ -64,8 +75,33 @@ func (s *UIScrollView) ContentOffset() (int, int) {
 	return s.raw.XPosition(), s.raw.YPosition()
 }
 
+func (s *UIScrollView) XPosition() int {
+	if s == nil || s.raw == nil {
+		return 0
+	}
+	return s.raw.XPosition()
+}
+
+func (s *UIScrollView) YPosition() int {
+	if s == nil || s.raw == nil {
+		return 0
+	}
+	return s.raw.YPosition()
+}
+
 func (s *UIScrollView) SetScrollType(t fltk_bridge.ScrollType) {
 	if s != nil && s.raw != nil {
 		s.raw.SetType(t)
 	}
+}
+
+func (s *UIScrollView) RemoveSubview(child view.Viewable) {
+	if s == nil || s.raw == nil || child == nil {
+		return
+	}
+	cv := child.View()
+	if cv == nil || cv.Raw() == nil {
+		return
+	}
+	s.raw.Remove(cv.Raw())
 }

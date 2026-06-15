@@ -9,18 +9,23 @@ import (
 type fakeBridgeTable struct {
 	rows    int
 	redraws int
-	draw    func(row int, x, y, w, h int)
+	draw    func(ctx fltk_bridge.TableContext, row, col int, x, y, w, h int)
 	event   func(row int) bool
 }
 
 func (f *fakeBridgeTable) SetRows(rows int) { f.rows = rows }
 func (f *fakeBridgeTable) Redraw()          { f.redraws++ }
-func (f *fakeBridgeTable) SetDrawCellHandler(fn func(row int, x, y, w, h int)) {
+func (f *fakeBridgeTable) SetDrawCellHandler(fn func(ctx fltk_bridge.TableContext, row, col int, x, y, w, h int)) {
 	f.draw = fn
 }
 func (f *fakeBridgeTable) SetEventHandler(fn func(row int) bool) { f.event = fn }
 func (f *fakeBridgeTable) GetSelectedRow() int                   { return 3 }
 func (f *fakeBridgeTable) Widget() fltk_bridge.Widget            { return nil }
+func (f *fakeBridgeTable) SetColumnCount(int)                    {}
+func (f *fakeBridgeTable) SetColumnWidth(int, int)               {}
+func (f *fakeBridgeTable) AllowColumnResizing()                  {}
+func (f *fakeBridgeTable) EnableColumnHeaders()                  {}
+func (f *fakeBridgeTable) SetColumnHeaderHeight(int)             {}
 
 type sliceDataSource struct {
 	rows  int
@@ -28,7 +33,7 @@ type sliceDataSource struct {
 }
 
 func (s *sliceDataSource) NumberOfRows(*TableView) int { return s.rows }
-func (s *sliceDataSource) CellForRow(_ *TableView, row int) *TableViewCell {
+func (s *sliceDataSource) CellForColumn(_ *TableView, row, col int) *TableViewCell {
 	if s.cells == nil {
 		s.cells = map[int]*TableViewCell{}
 	}
@@ -61,8 +66,8 @@ func TestReloadDataUsesDataSourceAndClearsVisibleCells(t *testing.T) {
 		t.Fatalf("redraws = %d, want 1", bridge.redraws)
 	}
 
-	bridge.draw(1, 0, 0, 10, 10)
-	if got := tv.visible[1]; got == nil || got.Row() != 1 {
+	tv.cellFor(1, 0)
+	if got := tv.visible["1_0"]; got == nil || got.Row() != 1 {
 		t.Fatalf("visible row was not cached with row index: %#v", got)
 	}
 
@@ -115,7 +120,7 @@ func TestTableViewNilSafety(t *testing.T) {
 	tv.SetCustomDraw(nil)
 	tv.Enqueue(nil)
 	tv.ReloadData()
-	tv.onDrawCell(0, 0, 0, 0, 0)
+	tv.onDrawCell(fltk_bridge.ContextCell, 0, 0, 0, 0, 0, 0)
 
 	if tv.View() != nil {
 		t.Fatal("nil TableView View() returned non-nil")

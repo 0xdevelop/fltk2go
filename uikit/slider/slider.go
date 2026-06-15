@@ -6,24 +6,47 @@ import (
 	"github.com/0xYeah/fltk2go/uikit/view"
 )
 
+type SliderStyle struct {
+	Type           fltk_bridge.SliderType
+	BoxType        fltk_bridge.BoxType
+	Color          uint
+	SelectionColor uint
+	TextSize       int
+}
+
+func DefaultSliderStyle() SliderStyle {
+	return SliderStyle{
+		Type:           fltk_bridge.HOR_NICE_SLIDER,
+		BoxType:        fltk_bridge.ROUND_DOWN_BOX,
+		Color:          0xE0E0E000,
+		SelectionColor: 0x42A5F500,
+		TextSize:       13,
+	}
+}
+
 type UISlider struct {
-	v   view.UIView
-	raw *fltk_bridge.Slider
+	v     view.UIView
+	raw   *fltk_bridge.Slider
+	style SliderStyle
 }
 
 func NewUISlider(r *foundation.Rect) *UISlider {
+	return NewUISliderWithOptions(r, DefaultSliderStyle())
+}
+
+func NewUISliderWithOptions(r *foundation.Rect, style SliderStyle) *UISlider {
 	if r == nil {
 		r = &foundation.Rect{X: 0, Y: 0, Width: 160, Height: 28}
 	}
 
 	raw := fltk_bridge.NewSlider(r.X, r.Y, r.Width, r.Height)
-	raw.SetType(fltk_bridge.HOR_NICE_SLIDER)
 	raw.SetMinimum(0)
 	raw.SetMaximum(1)
 	raw.SetStep(0.01)
 
-	s := &UISlider{raw: raw}
+	s := &UISlider{raw: raw, style: style}
 	s.v.BindRaw(raw)
+	s.ApplyStyle(style)
 	return s
 }
 
@@ -120,4 +143,26 @@ func (s *UISlider) SetVertical(vertical bool) {
 		return
 	}
 	s.raw.SetType(fltk_bridge.HOR_NICE_SLIDER)
+}
+
+func (s *UISlider) ApplyStyle(style SliderStyle) {
+	if s == nil || s.raw == nil {
+		return
+	}
+	s.style = style
+	s.raw.SetType(style.Type)
+	s.raw.SetBox(style.BoxType)
+	s.raw.SetColor(fltk_bridge.Color(style.Color))
+	s.raw.SetSelectionColor(fltk_bridge.Color(style.SelectionColor))
+	if textSizer, ok := any(s.raw).(interface{ SetTextSize(int) }); ok {
+		textSizer.SetTextSize(style.TextSize)
+	}
+	s.raw.Redraw()
+}
+
+func (s *UISlider) Style() SliderStyle {
+	if s == nil {
+		return SliderStyle{}
+	}
+	return s.style
 }

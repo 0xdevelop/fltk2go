@@ -30,6 +30,9 @@ void go_fltk_Group_add(Fl_Group *g, Fl_Widget *w) {
 void go_fltk_Group_remove(Fl_Group *g, Fl_Widget *w) {
   g->remove(w);
 }
+void go_fltk_Group_clear(Fl_Group *g) {
+  g->clear();
+}
 void go_fltk_Group_resizable(Fl_Group *g, Fl_Widget *w) {
   g->resizable(w);
 }

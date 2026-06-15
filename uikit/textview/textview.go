@@ -20,6 +20,7 @@ func NewUITextView(r *foundation.Rect) *UITextView {
 	raw := fltk_bridge.NewTextEditor(r.X, r.Y, r.Width, r.Height)
 	buffer := fltk_bridge.NewTextBuffer()
 	raw.SetBuffer(buffer)
+	raw.SetWrapMode(fltk_bridge.WRAP_AT_BOUNDS)
 
 	t := &UITextView{raw: raw, buffer: buffer}
 	t.v.BindRaw(raw)
@@ -66,6 +67,10 @@ func (t *UITextView) Append(text string) {
 	}
 }
 
+func (t *UITextView) AppendText(text string) {
+	t.Append(text)
+}
+
 func (t *UITextView) SetWrapAtBounds() {
 	if t != nil && t.raw != nil {
 		t.raw.SetWrapMode(fltk_bridge.WRAP_AT_BOUNDS)
@@ -93,4 +98,10 @@ func (t *UITextView) OnTextChanged(cb func()) {
 			cb()
 		}
 	})
+}
+
+func (t *UITextView) On(event fltk_bridge.Event, handler func(fltk_bridge.Event) bool) {
+	if t != nil {
+		t.v.On(event, handler)
+	}
 }

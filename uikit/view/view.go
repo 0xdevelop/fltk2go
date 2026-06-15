@@ -18,8 +18,16 @@ type Viewable interface {
 // raw：底层 FLTK widget（Box/Button/Group/Window 都是 Widget）
 // host：父容器（Window 或 Group）
 type UIView struct {
-	raw  fltk_bridge.Widget
-	host Container
+	raw           fltk_bridge.Widget
+	host          Container
+	eventHandlers map[fltk_bridge.Event]func(fltk_bridge.Event) bool
+}
+
+func (v *UIView) View() *UIView {
+	if v == nil {
+		return nil
+	}
+	return v
 }
 
 // BindHost：框架内部使用，为 view 绑定父容器
@@ -36,6 +44,13 @@ func (v *UIView) BindRaw(raw fltk_bridge.Widget) {
 		return
 	}
 	v.raw = raw
+	if v.eventHandlers != nil {
+		if eh, ok := v.raw.(interface {
+			SetEventHandler(func(fltk_bridge.Event) bool)
+		}); ok {
+			eh.SetEventHandler(v.handleEvent)
+		}
+	}
 }
 
 func (v *UIView) Raw() fltk_bridge.Widget {
@@ -53,17 +68,56 @@ func (v *UIView) Superview() Container {
 	return v.host
 }
 
-// AddSubview：iOS 语义。核心就一件事：host.Add(child.raw)
+// On 绑定闭包事件流
+func (v *UIView) On(event fltk_bridge.Event, handler func(fltk_bridge.Event) bool) {
+	if v == nil {
+		return
+	}
+	if v.eventHandlers == nil {
+		v.eventHandlers = make(map[fltk_bridge.Event]func(fltk_bridge.Event) bool)
+		if v.raw != nil {
+			if eh, ok := v.raw.(interface {
+				SetEventHandler(func(fltk_bridge.Event) bool)
+			}); ok {
+				eh.SetEventHandler(v.handleEvent)
+			}
+		}
+	}
+	v.eventHandlers[event] = handler
+}
+
+func (v *UIView) handleEvent(e fltk_bridge.Event) bool {
+	if v == nil {
+		return false
+	}
+	if v.eventHandlers != nil {
+		if handler, ok := v.eventHandlers[e]; ok {
+			return handler(e)
+		}
+	}
+	return false
+}
+
+// AddSubview：iOS 语义。如果当前 view 本身是容器，则将 child 添加到当前 view 中；
+// 否则，退回到将 child 添加到当前 view 的父容器中（虽然不推荐，但兼容旧逻辑）。
 func (v *UIView) AddSubview(child Viewable) {
-	if v == nil || v.host == nil || child == nil {
+	if v == nil || child == nil {
 		return
 	}
 	cv := child.View()
 	if cv == nil || cv.raw == nil {
 		return
 	}
-	v.host.Add(cv.raw)
-	cv.BindHost(v.host)
+
+	// 如果 v.raw 本身实现了 Container (比如 fltk_bridge.Group)
+	if container, ok := v.raw.(Container); ok {
+		container.Add(cv.raw)
+		cv.BindHost(container)
+	} else if v.host != nil {
+		// 回退逻辑，添加给 host
+		v.host.Add(cv.raw)
+		cv.BindHost(v.host)
+	}
 }
 
 // RemoveFromSuperview removes the view's raw widget from its current host.

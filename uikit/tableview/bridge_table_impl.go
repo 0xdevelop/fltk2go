@@ -7,7 +7,7 @@ import (
 // bridgeTableImpl 实现了 BridgeTable 接口，使用 fltk_bridge.TableRow 作为底层实现
 type bridgeTableImpl struct {
 	table           *fltk_bridge.TableRow
-	drawCellHandler func(row int, x, y, w, h int)
+	drawCellHandler func(ctx fltk_bridge.TableContext, row, col int, x, y, w, h int)
 	eventHandler    func(row int) bool
 }
 
@@ -31,11 +31,8 @@ func newBridgeTableImpl(x, y, w, h int) *bridgeTableImpl {
 
 	// 设置 FLTK TableRow 的绘制回调
 	table.SetDrawCellCallback(func(context fltk_bridge.TableContext, row, col, x, y, w, h int) {
-		// 只处理数据行的绘制
-		if context == fltk_bridge.ContextCell {
-			if bt.drawCellHandler != nil {
-				bt.drawCellHandler(row, x, y, w, h)
-			}
+		if bt.drawCellHandler != nil {
+			bt.drawCellHandler(context, row, col, x, y, w, h)
 		}
 	})
 
@@ -61,8 +58,28 @@ func (bt *bridgeTableImpl) Redraw() {
 }
 
 // SetDrawCellHandler 设置绘制单元格的回调函数
-func (bt *bridgeTableImpl) SetDrawCellHandler(fn func(row int, x, y, w, h int)) {
+func (bt *bridgeTableImpl) SetDrawCellHandler(fn func(ctx fltk_bridge.TableContext, row, col int, x, y, w, h int)) {
 	bt.drawCellHandler = fn
+}
+
+func (bt *bridgeTableImpl) SetColumnCount(cols int) {
+	bt.table.SetColumnCount(cols)
+}
+
+func (bt *bridgeTableImpl) SetColumnWidth(col, width int) {
+	bt.table.SetColumnWidth(col, width)
+}
+
+func (bt *bridgeTableImpl) AllowColumnResizing() {
+	bt.table.AllowColumnResizing()
+}
+
+func (bt *bridgeTableImpl) EnableColumnHeaders() {
+	bt.table.EnableColumnHeaders()
+}
+
+func (bt *bridgeTableImpl) SetColumnHeaderHeight(h int) {
+	bt.table.SetColumnHeaderHeight(h)
 }
 
 // SetEventHandler 设置处理事件的回调函数

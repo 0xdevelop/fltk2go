@@ -1,19 +1,36 @@
 package tableview
 
-import "github.com/0xYeah/fltk2go/uikit/view"
+import (
+	"fmt"
+
+	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xYeah/fltk2go/uikit/textlayout"
+	"github.com/0xYeah/fltk2go/uikit/view"
+)
+
+type TableColumn struct {
+	Identifier string
+	Title      string
+	Width      int
+	Align      fltk_bridge.Align
+}
 
 type TableView struct {
 	table      BridgeTable
 	v          view.UIView
-	customDraw func(row, x, y, w, h int)
+	customDraw func(ctx fltk_bridge.TableContext, row, col, x, y, w, h int)
 
 	dataSource DataSource
 	delegate   Delegate
 
-	defaultRowHeight int
+	columns []TableColumn
 
-	reusePool map[string][]*TableViewCell
-	visible   map[int]*TableViewCell
+	defaultRowHeight int
+	headerHeight     int
+
+	reusePool   map[string][]*TableViewCell
+	visible     map[string]*TableViewCell
+	drawnInPage map[string]bool
 }
 
 func New(x, y, w, h int) (*TableView, error) {
@@ -28,8 +45,10 @@ func newWithBridgeTable(bt BridgeTable) *TableView {
 	tv := &TableView{
 		table:            bt,
 		defaultRowHeight: 24,
+		headerHeight:     24,
 		reusePool:        map[string][]*TableViewCell{},
-		visible:          map[int]*TableViewCell{},
+		visible:          map[string]*TableViewCell{},
+		drawnInPage:      map[string]bool{},
 	}
 
 	if bt != nil {
@@ -41,6 +60,24 @@ func newWithBridgeTable(bt BridgeTable) *TableView {
 	}
 
 	return tv
+}
+
+func (tv *TableView) AddColumn(c TableColumn) {
+	if tv == nil || tv.table == nil {
+		return
+	}
+	if c.Width == 0 {
+		c.Width = 100
+	}
+	if c.Align == 0 {
+		c.Align = fltk_bridge.ALIGN_CENTER | fltk_bridge.ALIGN_CLIP
+	}
+	tv.columns = append(tv.columns, c)
+	tv.table.SetColumnCount(len(tv.columns))
+	tv.table.SetColumnWidth(len(tv.columns)-1, c.Width)
+	tv.table.AllowColumnResizing()
+	tv.table.EnableColumnHeaders()
+	tv.table.SetColumnHeaderHeight(tv.headerHeight)
 }
 
 // View implements view.Viewable — enables root.AddSubview(tv).
@@ -77,9 +114,16 @@ func (tv *TableView) SetDefaultRowHeight(h int) {
 	}
 }
 
+func (tv *TableView) SetHeaderHeight(h int) {
+	if tv != nil && tv.table != nil && h > 0 {
+		tv.headerHeight = h
+		tv.table.SetColumnHeaderHeight(h)
+	}
+}
+
 // SetCustomDraw sets a custom cell-drawing function called for every visible row.
 // When set, it replaces the default DataSource-driven cell drawing.
-func (tv *TableView) SetCustomDraw(fn func(row, x, y, w, h int)) {
+func (tv *TableView) SetCustomDraw(fn func(ctx fltk_bridge.TableContext, row, col, x, y, w, h int)) {
 	if tv != nil {
 		tv.customDraw = fn
 	}
@@ -124,11 +168,10 @@ func (tv *TableView) ReloadData() {
 		return
 	}
 
-	for row, cell := range tv.visible {
-		_ = row
+	for _, cell := range tv.visible {
 		tv.Enqueue(cell)
 	}
-	tv.visible = map[int]*TableViewCell{}
+	tv.visible = map[string]*TableViewCell{}
 
 	rows := tv.dataSource.NumberOfRows(tv)
 	if rows < 0 {
@@ -140,27 +183,97 @@ func (tv *TableView) ReloadData() {
 
 // ── callbacks ──────────────────────────────────────────────────────────────
 
-func (tv *TableView) onDrawCell(row int, x, y, w, h int) {
+func (tv *TableView) onDrawCell(ctx fltk_bridge.TableContext, row, col int, x, y, w, h int) {
 	if tv == nil {
 		return
 	}
 	if tv.customDraw != nil {
-		tv.customDraw(row, x, y, w, h)
+		tv.customDraw(ctx, row, col, x, y, w, h)
 		return
 	}
-	if tv.dataSource == nil {
-		return
-	}
-	cell, ok := tv.visible[row]
-	if !ok {
-		cell = tv.dataSource.CellForRow(tv, row)
-		if cell == nil {
+
+	switch ctx {
+	case fltk_bridge.ContextStartPage:
+		fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA, 14)
+		tv.drawnInPage = make(map[string]bool)
+	case fltk_bridge.ContextEndPage:
+		// Cleanup invisible cells to prevent memory leak and allow reuse
+		for key, cell := range tv.visible {
+			if !tv.drawnInPage[key] {
+				tv.Enqueue(cell)
+				delete(tv.visible, key)
+			}
+		}
+	case fltk_bridge.ContextColHeader:
+		fltk_bridge.PushClip(x, y, w, h)
+		fltk_bridge.DrawBox(fltk_bridge.THIN_UP_BOX, x, y, w, h, fltk_bridge.Color(0xDDDDDD00))
+		fltk_bridge.SetDrawColor(fltk_bridge.Color(0))
+		if col >= 0 && col < len(tv.columns) {
+			fltk_bridge.Draw(tv.columns[col].Title, x, y, w, h, tv.columns[col].Align)
+		}
+		fltk_bridge.PopClip()
+	case fltk_bridge.ContextCell:
+		if tv.dataSource == nil {
 			return
 		}
-		cell.row = row
-		tv.visible[row] = cell
+		fltk_bridge.PushClip(x, y, w, h)
+
+		cell := tv.cellFor(row, col)
+
+		bgColor := fltk_bridge.Color(0xFFFFFF00)
+		selected := tv.table != nil && tv.table.GetSelectedRow() == row
+		if selected {
+			bgColor = fltk_bridge.Color(0xBBDEFB00)
+		} else if row%2 == 1 {
+			bgColor = fltk_bridge.Color(0xF5F5F500)
+		}
+		fltk_bridge.DrawBox(fltk_bridge.FLAT_BOX, x, y, w, h, bgColor)
+
+		if cell != nil {
+			fltk_bridge.SetDrawColor(cell.TextColor)
+			fltk_bridge.SetDrawFont(cell.Font, cell.FontSize)
+
+			if cell.preparedText != nil {
+				lineHeight := cell.FontSize + 4
+				layoutResult := textlayout.Layout(cell.preparedText, w-10, lineHeight)
+
+				startY := y + (h-layoutResult.Height)/2
+				if startY < y {
+					startY = y
+				}
+
+				for i, line := range layoutResult.Lines {
+					fltk_bridge.Draw(line.Text, x+5, startY+(i*lineHeight), w-10, lineHeight, cell.Align)
+				}
+			} else if cell.Text != "" {
+				fltk_bridge.Draw(cell.Text, x+5, y, w-10, h, cell.Align)
+			}
+		}
+
+		fltk_bridge.SetDrawColor(fltk_bridge.Color(0xDDDDDD00))
+		fltk_bridge.DrawRect(x, y, w, h)
+
+		fltk_bridge.PopClip()
 	}
-	_, _, _, _ = x, y, w, h
+}
+
+func (tv *TableView) cellFor(row, col int) *TableViewCell {
+	if tv == nil || tv.dataSource == nil {
+		return nil
+	}
+	key := fmt.Sprintf("%d_%d", row, col)
+	tv.drawnInPage[key] = true
+	cell, ok := tv.visible[key]
+	if ok {
+		return cell
+	}
+	cell = tv.dataSource.CellForColumn(tv, row, col)
+	if cell != nil {
+		cell.row = row
+		cell.col = col
+		tv.visible[key] = cell
+	}
+	return cell
 }
 
 func (tv *TableView) onEvent(row int) bool {

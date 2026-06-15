@@ -6,12 +6,37 @@ import (
 	"github.com/0xYeah/fltk2go/uikit/view"
 )
 
-type UIProgressView struct {
-	v   view.UIView
-	raw *fltk_bridge.Progress
+type ProgressStyle struct {
+	BoxType        fltk_bridge.BoxType
+	Color          uint
+	SelectionColor uint
 }
 
+func DefaultProgressStyle() ProgressStyle {
+	return ProgressStyle{
+		BoxType:        fltk_bridge.ROUND_DOWN_BOX,
+		Color:          0xE0E0E000,
+		SelectionColor: 0x4CAF5000,
+	}
+}
+
+type UIProgressView struct {
+	v     view.UIView
+	raw   *fltk_bridge.Progress
+	style ProgressStyle
+}
+
+type UIProgress = UIProgressView
+
 func NewUIProgressView(r *foundation.Rect) *UIProgressView {
+	return NewUIProgressWithOptions(r, DefaultProgressStyle())
+}
+
+func NewUIProgress(r *foundation.Rect) *UIProgressView {
+	return NewUIProgressWithOptions(r, DefaultProgressStyle())
+}
+
+func NewUIProgressWithOptions(r *foundation.Rect, style ProgressStyle) *UIProgressView {
 	if r == nil {
 		r = &foundation.Rect{X: 0, Y: 0, Width: 160, Height: 20}
 	}
@@ -21,8 +46,9 @@ func NewUIProgressView(r *foundation.Rect) *UIProgressView {
 	raw.SetMaximum(1)
 	raw.SetValue(0)
 
-	p := &UIProgressView{raw: raw}
+	p := &UIProgressView{raw: raw, style: style}
 	p.v.BindRaw(raw)
+	p.ApplyStyle(style)
 	return p
 }
 
@@ -60,10 +86,26 @@ func (p *UIProgressView) SetMinimumValue(v float64) {
 	}
 }
 
+func (p *UIProgressView) SetMinimum(v float64) {
+	p.SetMinimumValue(v)
+}
+
 func (p *UIProgressView) SetMaximumValue(v float64) {
 	if p != nil && p.raw != nil {
 		p.raw.SetMaximum(v)
 	}
+}
+
+func (p *UIProgressView) SetMaximum(v float64) {
+	p.SetMaximumValue(v)
+}
+
+func (p *UIProgressView) SetValue(v float64) {
+	p.SetProgress(v)
+}
+
+func (p *UIProgressView) Value() float64 {
+	return p.Progress()
 }
 
 func (p *UIProgressView) SetTrackColor(rgb uint) {
@@ -76,4 +118,22 @@ func (p *UIProgressView) SetProgressTintColor(rgb uint) {
 	if p != nil && p.raw != nil {
 		p.raw.SetSelectionColor(fltk_bridge.Color(rgb))
 	}
+}
+
+func (p *UIProgressView) ApplyStyle(style ProgressStyle) {
+	if p == nil || p.raw == nil {
+		return
+	}
+	p.style = style
+	p.raw.SetBox(style.BoxType)
+	p.raw.SetColor(fltk_bridge.Color(style.Color))
+	p.raw.SetSelectionColor(fltk_bridge.Color(style.SelectionColor))
+	p.raw.Redraw()
+}
+
+func (p *UIProgressView) Style() ProgressStyle {
+	if p == nil {
+		return ProgressStyle{}
+	}
+	return p.style
 }

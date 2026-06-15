@@ -1,38 +1,53 @@
+# fltk2go
 
-<!-- TOC -->
+![Go Version](https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go)
+![FLTK](https://img.shields.io/badge/FLTK-1.4-blue)
 
-- [1. info](#1-info)
-- [2. build FLTK](#2-build-fltk)
-- [3. Use](#3-use)
-- [4. Dir Tree](#4-dir-tree)
-- [5. Warning](#5-warning)
-- [6. used tools](#6-used-tools)
-  - [6.1. tree](#61-tree)
-    - [6.1.1. list projects](#611-list-projects)
-  - [Depends](#depends)
-    - [Linux](#linux)
+**fltk2go** 是一个将 C++ FLTK 框架桥接到 Go 的现代 GUI 库，提供了类似 iOS/Mac Cocoa Framework (UIKit) 的高级声明式与命令式 API。
+它不仅提供了原生跨平台的高性能，还带来了 `addSubview` 和基于闭包(Block)回调的现代开发体验。
 
-<!-- /TOC -->
-
-# 1. info
 *  Use FLTK like the Cocoa Framework for iOS/Mac.
 *  中文：像iOS/Mac的Cocoa Framework一样用FLTK
 * [FLTK Resource Doc](https://www.fltk.org/doc-1.4/index.html)
 
+---
 
+## 🏗 三层架构设计 (Architecture)
 
-# 2. build FLTK
-```shell
-go run fltk_build/fltk_build.go fltk_build/manifest.go
+fltk2go 采用了清晰的三层架构设计，既保证了底层 C++ API 的高效执行，又为 Go 开发者提供了极其友好的高层封装：
+
+```text
+fltk2go/
+├─ uikit/              # ⭐ 应用层：高级 UI 框架 (类 iOS Cocoa UIKit)
+│  ├─ window/          # 窗口组件
+│  ├─ button/          # 按钮组件
+│  ├─ splitview/       # [新] 分割视图组件
+│  ├─ loginview/       # [新] 登录视图组件
+│  └─ navigationbar/   # [新] 导航栏组件
+├─ runtime/            # ⚙️ 核心层：运行时核心
+│  ├─ handle/          # unsafe.Pointer 生命周期管理
+│  ├─ callback/        # Go ↔ C 回调表与事件分发
+│  ├─ loop/            # UI loop / 渲染循环
+│  └─ thread/          # 主线程约束安全保证
+├─ fltk_bridge/        # 🌉 底层：C ABI / Cgo
+└─ lib/                # C/C++ FLTK 静态链接库
 ```
 
-# 3. Use
+- **底层 (fltk_bridge)**: 封装 C++ FLTK API 为纯 C ABI，并通过 cgo 暴露给 Go。
+- **核心层 (runtime)**: 负责 Go ↔ C 之间的指针转换、生命周期控制、事件分发机制与主线程亲和性管理。
+- **应用层 (uikit)**: 提供类似 Cocoa 风格的面向对象 API 组件，极大地简化了 UI 构建与事件绑定的复杂性。
+
+---
+
+## 🚀 快速上手 (Quick Start)
+
+### 安装
+
 ```shell
 go get github.com/0xYeah/fltk2go@latest
 ```
 
-UIKit-style controls are available from the root `uikit` package as a facade, while
-existing subpackage imports remain supported.
+UIKit-style controls are available from the root `uikit` package as a facade, while existing subpackage imports remain supported.
 
 ```go
 package main
@@ -77,48 +92,136 @@ Current UIKit wrappers include `UILabel`, `UIButton`, `Input`, `UITableView`,
 `UIStackView`, and `UITextView`, plus root facade dialog helpers
 `uikit.Message`, `uikit.Alert`, and `uikit.Choice`.
 
-# 4. Dir Tree
-```shell
-fltk2go/
-├─ fltk2go.go          # Run / Quit / Version
-├─ window/
-├─ button/
-├─ widget/
-├─ runtime/            # ⭐ 运行时核心
-│  ├─ handle/          # unsafe.Pointer 生命周期
-│  ├─ callback/        # Go ↔ C 回调表
-│  ├─ loop/            # UI loop / Run
-│  └─ thread/          # 主线程约束
-├─ fltk_bridge/        # C ABI / cgo
-└─ lib/
+### Examples 调试结构
 
+`examples` 采用“可 import 示例包 + 同目录独立入口”的结构，方便 IDE 断点调试：
+
+- `examples/<name>/<name>.go`: 示例业务包，暴露 `BuildView(parent *view.UIView)`，主 launcher 和独立入口都会调用这里。
+- `examples/<name>/main.go`: 带 `//go:build ignore` 的标准 `package main` 调试入口，可在 IDE 中直接运行或断点调试，不参与示例包编译。
+- `examples/main.go`: 示例总入口，左侧选择示例，右侧内嵌预览，也可以启动对应独立入口。
+
+```shell
+cd examples
+go run .
+go run ./counter/main.go
+go run ./slider_progress/main.go
 ```
 
-# 5. Warning
-*   Prevent GUI goroutines from being scheduled to other OS threads
-*  中文：防止 GUI的goroutine 被调度到其他 OS 线程
+### UIKit 代码片段示范
+
+通过 `uikit` 快速创建一个现代化的窗口和组件：
+
 ```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+
+	"github.com/0xYeah/fltk2go"
+	"github.com/0xYeah/fltk2go/foundation"
+	"github.com/0xYeah/fltk2go/uikit/loginview"
+	"github.com/0xYeah/fltk2go/uikit/window"
+)
+
 func main() {
-    // 将当前 goroutine 绑定到当前操作系统线程。
-    // 对于 Win32 / OpenGL / GDI+ 等具有线程亲和性的系统或 C/C++ API，这是必须的。
-    // 防止 goroutine 被调度到其他 OS 线程，导致 GUI / 图形上下文失效或异常。
-    runtime.LockOSThread()
-	... // 其他代码
+	// ⚠️ 必须锁定主线程，防止 GUI goroutine 被调度到其他 OS 线程导致图形上下文异常
+	runtime.LockOSThread()
+
+	// 1. 创建窗口
+	win := window.NewUIWindow(400, 300, "UIKit 快速上手")
+	root := win.RootView()
+
+	// 2. 创建高级组件 (LoginView)
+	lv := loginview.NewLoginView(&foundation.Rect{X: 0, Y: 0, Width: 400, Height: 300})
 	
-	
+	// 3. 闭包事件绑定
+	lv.OnLoginClick(func(username, password string) {
+		fmt.Printf("登录点击! 账号: %s, 密码: %s\n", username, password)
+	})
+
+	// 4. 添加到视图树
+	root.AddSubview(lv)
+
+	// 5. 显示并启动事件循环
+	win.Show()
+	fltk2go.Run()
 }
 ```
 
-# 6. used tools
-## 6.1. tree
-### 6.1.1. list projects
+---
+
+## 📦 支持的组件库 (Components)
+
+`fltk2go/uikit` 提供了一系列丰富的现代 UI 控件：
+
+- **基础视图**: `UIView`, `UIWindow`
+- **控制组件**: `UIButton`, `UILabel`, `UITextField`, `UICheckbox`, `UISwitch`, `UISlider`, `UIStepper`
+- **数据视图**: `UITableView`, `UITreeView`, `UIImageView`, `UITextView`
+- **布局视图**: `UIScrollView`, `UITabView`, `UILayout`
+- **菜单导航**: `UIMenuBar`, `UIAlert`, `UIDropdown`
+- **🆕 新增高级组件**:
+  - **`UISplitView` (SplitView)**: 支持拖拽调整大小的分割视图组件，适合构建复杂多面板 IDE 类布局。
+  - **`UILoginView` (LoginView)**: 开箱即用的登录面板组件，内置账号密码输入和登录交互封装。
+  - **`UINavigationBar` (NavigationBar)**: 类 iOS 导航栏组件，支持左侧/右侧按钮、标题和导航堆栈概念。
+
+---
+
+## 📚 API 速查表 (API Cheat Sheet)
+
+### 核心生命周期
+| API | 描述 |
+| --- | --- |
+| `runtime.LockOSThread()` | **必需**。绑定主线程，防止 GUI 崩溃。 |
+| `fltk2go.Run()` | 启动并阻塞执行 FLTK 主事件循环。 |
+| `fltk2go.App(func)` | 封装了主线程锁定与初始化的快捷入口函数。 |
+
+### UIKit 视图操作
+| API | 描述 |
+| --- | --- |
+| `view.AddSubview(child)` | 将子视图添加到父视图中。 |
+| `view.RemoveFromSuperview()` | 从父视图中移除当前视图。 |
+| `view.SetFrame(rect)` | 重新设置视图的坐标和尺寸。 |
+
+### 常用事件绑定
+| API | 描述 |
+| --- | --- |
+| `button.OnTouchUpInside(func)` | 按钮点击事件回调。 |
+| `textfield.OnTextChanged(func)` | 文本输入框内容变更回调。 |
+| `slider.OnValueChanged(func)` | 滑块数值变化回调。 |
+| `tableview.OnCellClick(func)` | 表格行点击回调。 |
+| `loginview.OnLoginClick(func)` | 登录面板点击回调，直接获取账密。 |
+
+---
+
+## 🛠 构建 FLTK 依赖 (Build)
+
+如果需要重新编译底层的 C++ FLTK 依赖库：
+
 ```shell
-tree -I ".git|build|lib"
+go run fltk_build/fltk_build.go fltk_build/manifest.go
 ```
 
-## Depends
-### Linux
+## ⚠️ 注意事项 (Warning)
+
+**防止 GUI goroutine 被调度到其他 OS 线程**
+
+对于 Win32 / OpenGL / GDI+ / macOS Cocoa 等具有线程亲和性的系统，GUI API 必须在主线程执行。
+
+```go
+func main() {
+    // 将当前 goroutine 绑定到当前操作系统线程。
+    // 防止 goroutine 被调度到其他 OS 线程，导致 GUI / 图形上下文失效或异常。
+    runtime.LockOSThread()
+    // ... 其他代码
+}
 ```
+
+## 🐧 依赖项 (Linux Depends)
+
+在 Linux 环境下编译需要安装以下开发库：
+
+```shell
 apt update
 apt install -y \
   build-essential cmake pkg-config \
@@ -126,5 +229,4 @@ apt install -y \
   libxft-dev \
   libgl1-mesa-dev libglu1-mesa-dev \
   mesa-common-dev
-
 ```

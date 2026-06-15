@@ -42,11 +42,19 @@ func (s *UISwitch) SetOn(on bool) {
 	}
 }
 
+func (s *UISwitch) SetValue(v bool) {
+	s.SetOn(v)
+}
+
 func (s *UISwitch) IsOn() bool {
 	if s == nil || s.raw == nil {
 		return false
 	}
 	return s.raw.Value()
+}
+
+func (s *UISwitch) Value() bool {
+	return s.IsOn()
 }
 
 // OnValueChanged invokes cb with the current on/off state.
@@ -68,5 +76,11 @@ func (s *UISwitch) OnChange(cb func()) {
 				cb()
 			}
 		})
+	}
+}
+
+func (s *UISwitch) On(event fltk_bridge.Event, handler func(fltk_bridge.Event) bool) {
+	if s != nil {
+		s.v.On(event, handler)
 	}
 }

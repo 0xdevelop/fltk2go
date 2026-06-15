@@ -85,3 +85,33 @@ var (
 func (t *Tree) SetSelectMode(selectMode TreeSelect) {
 	C.go_fltk_Tree_set_select_mode((*C.Fl_Tree)(t.ptr()), C.int(selectMode))
 }
+
+type TreeReason int
+
+const (
+	TreeReasonNone       TreeReason = 0 // FL_TREE_REASON_NONE
+	TreeReasonSelected   TreeReason = 1 // FL_TREE_REASON_SELECTED
+	TreeReasonDeselected TreeReason = 2 // FL_TREE_REASON_DESELECTED
+	TreeReasonOpened     TreeReason = 3 // FL_TREE_REASON_OPENED
+	TreeReasonClosed     TreeReason = 4 // FL_TREE_REASON_CLOSED
+	TreeReasonDragged    TreeReason = 5 // FL_TREE_REASON_DRAGGED
+)
+
+func (t *Tree) CallbackItem() TreeItem {
+	return TreeItem{ptr: C.go_fltk_Tree_callback_item((*C.Fl_Tree)(t.ptr()))}
+}
+
+func (t *Tree) CallbackReason() TreeReason {
+	return TreeReason(C.go_fltk_Tree_callback_reason((*C.Fl_Tree)(t.ptr())))
+}
+
+func (t *Tree) ItemPathname(item TreeItem) string {
+	if item.ptr == nil {
+		return ""
+	}
+	return C.GoString(C.go_fltk_Tree_item_pathname((*C.Fl_Tree)(t.ptr()), item.ptr))
+}
+
+func (t TreeItem) IsValid() bool {
+	return t.ptr != nil
+}

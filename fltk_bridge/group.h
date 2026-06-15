@@ -14,6 +14,7 @@ extern "C" {
   extern void go_fltk_Group_end(Fl_Group *g);
   extern void go_fltk_Group_add(Fl_Group *g, Fl_Widget *w);
   extern void go_fltk_Group_remove(Fl_Group *g, Fl_Widget *w);
+  extern void go_fltk_Group_clear(Fl_Group *g);
   extern void go_fltk_Group_resizable(Fl_Group *g, Fl_Widget *w);
   extern void go_fltk_Group_draw_children(Fl_Group *g);
   extern Fl_Widget* go_fltk_Group_child(Fl_Group *g, int index);

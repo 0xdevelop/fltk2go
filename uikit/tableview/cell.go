@@ -1,22 +1,52 @@
 package tableview
 
+import (
+	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xYeah/fltk2go/uikit/textlayout"
+)
+
 // TableViewCell：UITableViewCell 的最小抽象
 type TableViewCell struct {
 	ReuseID string
 
-	// 你未来若要“控件型 cell”（cell 里放 label/button），
-	// 可以在这里挂一个 uikit/view 的容器，如 ContentView *view.View
-	// 但为了不强依赖你当前 uikit/view 的具体 API，这里先留空。
 	row int
+	col int
+
+	Text      string
+	Font      fltk_bridge.Font
+	FontSize  int
+	TextColor fltk_bridge.Color
+	Align     fltk_bridge.Align
+	Selected  bool
+
+	preparedText *textlayout.PreparedText
 }
 
 func NewCell(reuseID string) *TableViewCell {
-	return &TableViewCell{ReuseID: reuseID}
+	return &TableViewCell{
+		ReuseID:   reuseID,
+		Font:      fltk_bridge.HELVETICA,
+		FontSize:  14,
+		TextColor: fltk_bridge.Color(0),
+		Align:     fltk_bridge.ALIGN_CENTER | fltk_bridge.ALIGN_CLIP,
+	}
 }
 
 // PrepareForReuse：复用前清理状态
 func (c *TableViewCell) PrepareForReuse() {
-	// TODO: 你需要的清理逻辑（文本、颜色、回调解绑等）
+	c.Text = ""
+	c.preparedText = nil
+	c.Selected = false
+}
+
+func (c *TableViewCell) SetText(text string) {
+	c.Text = text
+	if text != "" {
+		c.preparedText = textlayout.Prepare(text, c.Font, c.FontSize)
+	} else {
+		c.preparedText = nil
+	}
 }
 
 func (c *TableViewCell) Row() int { return c.row }
+func (c *TableViewCell) Col() int { return c.col }

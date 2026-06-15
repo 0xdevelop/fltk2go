@@ -31,8 +31,15 @@ func (g *Group) Add(w Widget) {
 func (g *Group) Remove(w Widget) {
 	C.go_fltk_Group_remove((*C.Fl_Group)(g.ptr()), w.getWidget().ptr())
 }
+func (g *Group) Clear() {
+	C.go_fltk_Group_clear((*C.Fl_Group)(g.ptr()))
+}
 
 func (g *Group) Resizable(w Widget) {
+	if w == nil {
+		C.go_fltk_Group_resizable((*C.Fl_Group)(g.ptr()), nil)
+		return
+	}
 	C.go_fltk_Group_resizable((*C.Fl_Group)(g.ptr()), w.getWidget().ptr())
 }
 func (g *Group) DrawChildren() {

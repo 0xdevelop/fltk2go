@@ -35,6 +35,11 @@ extern "C" {
   extern const int go_FL_TREE_SELECT_SINGLE_DRAGGABLE;
   extern void go_fltk_Tree_set_select_mode(Fl_Tree* tree, int selectMode);
 
+  extern Fl_Tree_Item* go_fltk_Tree_callback_item(Fl_Tree* tree);
+  extern int go_fltk_Tree_callback_reason(Fl_Tree* tree);
+
+  extern const char* go_fltk_Tree_item_pathname(Fl_Tree* tree, Fl_Tree_Item* item);
+
 #ifdef __cplusplus
 }
 #endif

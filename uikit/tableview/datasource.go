@@ -3,7 +3,7 @@ package tableview
 // DataSource：提供行数与 Cell
 type DataSource interface {
 	NumberOfRows(tv *TableView) int
-	CellForRow(tv *TableView, row int) *TableViewCell
+	CellForColumn(tv *TableView, row, col int) *TableViewCell
 }
 
 // Delegate：交互与布局（可选实现）

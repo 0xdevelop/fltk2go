@@ -6,10 +6,16 @@ import "github.com/0xYeah/fltk2go/fltk_bridge"
 type BridgeTable interface {
 	SetRows(rows int)
 	Redraw()
-	SetDrawCellHandler(fn func(row int, x, y, w, h int))
+	SetDrawCellHandler(fn func(ctx fltk_bridge.TableContext, row, col int, x, y, w, h int))
 	SetEventHandler(fn func(row int) bool)
 	GetSelectedRow() int
 	Widget() fltk_bridge.Widget
+
+	SetColumnCount(cols int)
+	SetColumnWidth(col, width int)
+	AllowColumnResizing()
+	EnableColumnHeaders()
+	SetColumnHeaderHeight(h int)
 }
 
 func newBridgeTable(x, y, w, h int) (BridgeTable, error) {

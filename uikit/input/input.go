@@ -24,6 +24,8 @@ const (
 	IntInput
 	// FloatInput 浮点数输入框
 	FloatInput
+	// SecretInput 密码输入框
+	SecretInput
 )
 
 // New 创建一个新的输入框
@@ -40,6 +42,8 @@ func NewWithType(x, y, width, height int, placeholder string, inputType InputTyp
 		input = fltk_bridge.NewIntInput(x, y, width, height, placeholder)
 	case FloatInput:
 		input = fltk_bridge.NewFloatInput(x, y, width, height, placeholder)
+	case SecretInput:
+		input = fltk_bridge.NewSecretInput(x, y, width, height, placeholder)
 	default:
 		input = fltk_bridge.NewInput(x, y, width, height, placeholder)
 	}

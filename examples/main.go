@@ -3,146 +3,195 @@ package main
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 
 	"github.com/0xYeah/fltk2go"
 	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xYeah/fltk2go/uikit/view"
+
+	example_auth "examples/auth"
+	example_comprehensive "examples/comprehensive"
+	example_counter "examples/counter"
+	example_input "examples/input"
+	example_loginview "examples/loginview"
+	example_navigationbar "examples/navigationbar"
+	example_slider_progress "examples/slider_progress"
+	example_splitview "examples/splitview"
+	example_tableview "examples/tableview"
+	example_tableview_demo "examples/tableview_demo"
+	example_tabs "examples/tabs"
 )
 
 const (
-	winW      = 1040
-	winH      = 680
-	initSplit = 300
-
-	ink       = fltk_bridge.Color(0x0F172A00)
-	slate     = fltk_bridge.Color(0x1E293B00)
-	muted     = fltk_bridge.Color(0x33415500)
-	panel     = fltk_bridge.Color(0xF8FAFC00)
-	panelSoft = fltk_bridge.Color(0xEEF2F700)
-	line      = fltk_bridge.Color(0xCBD5E100)
-	accent    = fltk_bridge.Color(0x2563EB00)
-	white     = fltk_bridge.Color(0xFFFFFF00)
+	winW        = 1200
+	winH        = 700
+	leftSplit   = 200
+	middleSplit = 500
 )
 
 type example struct {
-	title    string
-	subtitle string
-	html     string
-	dir      string
+	title     string
+	html      string
+	dir       string
+	buildFunc func(parent *view.UIView) view.Viewable
 }
 
 var examples = []example{
 	{
-		title:    "Counter",
-		subtitle: "UIButton + UILabel basics",
-		html: `<h2><font color="#0F172A">Counter</font></h2>
-<p><font color="#475569">A compact state-management demo with a single primary action and immediate label feedback.</font></p>
-<h3>What it shows</h3>
+		title: "Counter",
+		html: `<h2>Counter</h2>
+<p>基础按钮点击计数器。</p>
+<b>演示要点：</b>
 <ul>
-<li>UIButton click callback via <code>OnTouchUpInside</code></li>
-<li>UILabel text updates with <code>SetText</code></li>
-<li><code>runtime.LockOSThread()</code> for GUI thread affinity</li>
+<li>UIButton 点击回调 OnTouchUpInside</li>
+<li>UILabel 文本动态更新 SetText</li>
+<li>runtime.LockOSThread() 线程绑定</li>
 </ul>`,
-		dir: "./counter",
+		dir:       "./counter",
+		buildFunc: example_counter.BuildView,
 	},
 	{
-		title:    "Comprehensive",
-		subtitle: "Buttons, state, table rows",
-		html: `<h2><font color="#0F172A">Comprehensive</font></h2>
-<p><font color="#475569">A polished component gallery with button states, semantic actions, and a custom-drawn table.</font></p>
-<h3>What it shows</h3>
+		title: "Comprehensive",
+		html: `<h2>Comprehensive</h2>
+<p>综合控件示例，展示多种按钮类型与 TableView 联动。</p>
+<b>演示要点：</b>
 <ul>
-<li>System / checkbox / radio / toggle buttons</li>
-<li>TableView DataSource / Delegate pattern</li>
-<li>Dynamic add / delete / reload workflows</li>
-<li>Custom row drawing with visual hierarchy</li>
+<li>SystemButton / CheckboxButton / RadioButton / ToggleButton</li>
+<li>TableView DataSource / Delegate 模式</li>
+<li>动态添加 / 删除行，ReloadData</li>
+<li>SetCustomDraw 自定义行绘制</li>
 </ul>`,
-		dir: "./comprehensive",
+		dir:       "./comprehensive",
+		buildFunc: example_comprehensive.BuildView,
 	},
 	{
-		title:    "Input",
-		subtitle: "Forms with preview feedback",
-		html: `<h2><font color="#0F172A">Input</font></h2>
-<p><font color="#475569">Form controls arranged as a readable two-column workflow: inputs on the left, live preview on the right.</font></p>
-<h3>What it shows</h3>
+		title: "Input",
+		html: `<h2>Input</h2>
+<p>各类输入框示例。</p>
+<b>演示要点：</b>
 <ul>
-<li>Text, integer, float, password, and multiline inputs</li>
-<li>Readable labels instead of placeholder-only context</li>
-<li>Display summary updated from field values</li>
+<li>普通文本输入 input.New</li>
+<li>整数输入 input.IntInput</li>
+<li>浮点输入 input.FloatInput</li>
+<li>密码框 / 多行文本框</li>
+<li>Text() 读取输入内容</li>
 </ul>`,
-		dir: "./input",
+		dir:       "./input",
+		buildFunc: example_input.BuildView,
 	},
 	{
-		title:    "SplitView",
-		subtitle: "Resizable master-detail layout",
-		html: `<h2><font color="#0F172A">SplitView</font></h2>
-<p><font color="#475569">Horizontal and vertical split views with clearer pane boundaries and cross-panel updates.</font></p>
-<h3>What it shows</h3>
+		title: "SplitView",
+		html: `<h2>SplitView</h2>
+<p>水平与垂直分割视图布局示例。</p>
+<b>演示要点：</b>
 <ul>
-<li>Horizontal / vertical split modes</li>
-<li>SetLeftView / SetRightView panel composition</li>
-<li>Fixed left pane sizing</li>
-<li>Cross-panel selection and detail updates</li>
+<li>splitview.New 水平/垂直模式</li>
+<li>SetLeftView / SetRightView 设置子面板</li>
+<li>SetLeftViewFixed 固定左侧宽度</li>
+<li>跨面板联动更新</li>
 </ul>`,
-		dir: "./splitview",
+		dir:       "./splitview",
+		buildFunc: example_splitview.BuildView,
 	},
 	{
-		title:    "TableView",
-		subtitle: "Server list management",
-		html: `<h2><font color="#0F172A">TableView</font></h2>
-<p><font color="#475569">A server management list with table rows, status semantics, and add/remove actions.</font></p>
-<h3>What it shows</h3>
+		title: "TableView",
+		html: `<h2>TableView</h2>
+<p>服务器管理列表，演示 DataSource / Delegate 模式。</p>
+<b>演示要点：</b>
 <ul>
 <li>DataSource.NumberOfRows / CellForRow</li>
 <li>Delegate.DidSelectRow / RowHeight</li>
-<li>Custom row drawing</li>
-<li>Dynamic server records</li>
+<li>SetCustomDraw 自定义行绘制</li>
+<li>动态添加 / 删除服务器记录</li>
 </ul>`,
-		dir: "./tableview",
+		dir:       "./tableview",
+		buildFunc: example_tableview.BuildView,
 	},
 	{
-		title:    "Slider & Progress",
-		subtitle: "Live controls with metrics",
-		html: `<h2><font color="#0F172A">Slider &amp; Progress</font></h2>
-<p><font color="#475569">Two spacious control cards with real-time progress feedback and one clear action cluster.</font></p>
-<h3>What it shows</h3>
+		title: "Slider &amp; Progress",
+		html: `<h2>Slider &amp; Progress</h2>
+<p>滑块与进度条实时联动控制。</p>
+<b>演示要点：</b>
 <ul>
-<li>UIKit-style UISlider and UIProgressView wrappers</li>
-<li>Value-changed callbacks</li>
-<li>Reset / 50% / Max semantic actions</li>
-<li>Readable spacing for desktop and remote sessions</li>
+<li>fltk_bridge.NewSlider 水平滑块</li>
+<li>fltk_bridge.NewValueSlider 带数值显示</li>
+<li>fltk_bridge.NewProgress 进度条</li>
+<li>WhenChanged 实时回调</li>
+<li>Reset / 50% / Max 三挡按钮</li>
 </ul>`,
-		dir: "./slider_progress",
+		dir:       "./slider_progress",
+		buildFunc: example_slider_progress.BuildView,
 	},
 	{
-		title:    "Tabs",
-		subtitle: "Grouped settings panels",
-		html: `<h2><font color="#0F172A">Tabs</font></h2>
-<p><font color="#475569">Tabbed controls demonstrating FLTK begin/end ownership with settings-like interaction patterns.</font></p>
-<h3>What it shows</h3>
+		title: "Tabs",
+		html: `<h2>Tabs</h2>
+<p>选项卡容器示例，展示 FLTK begin/end 自动归属机制。</p>
+<b>演示要点：</b>
 <ul>
-<li>Tabs + Group begin/end ownership</li>
-<li>Choice dropdowns</li>
-<li>Spinner and value slider controls</li>
-<li>Multi-control output updates</li>
+<li>fltk_bridge.NewTabs + NewGroup begin/end</li>
+<li>Choice 下拉颜色选择器</li>
+<li>Spinner 整数调节</li>
+<li>ValueSlider 浮点调节</li>
+<li>多控件联动更新显示</li>
 </ul>`,
-		dir: "./tabs",
+		dir:       "./tabs",
+		buildFunc: example_tabs.BuildView,
 	},
 	{
-		title:    "TableView Demo",
-		subtitle: "JSON-backed server table",
-		html: `<h2><font color="#0F172A">TableView Demo</font></h2>
-<p><font color="#475569">A complete TableView scenario that loads server data from JSON and refreshes it in-place.</font></p>
-<h3>What it shows</h3>
+		title: "TableView Demo",
+		html: `<h2>TableView Demo</h2>
+<p>从 JSON 文件加载服务器数据的完整 TableView 演示。</p>
+<b>演示要点：</b>
 <ul>
-<li>JSON parsing from <code>servers.json</code></li>
+<li>encoding/json 解析 servers.json</li>
 <li>ServerTableDataSource / ServerTableDelegate</li>
-<li>tableview.New list creation</li>
-<li>Refresh action with local data reload</li>
+<li>tableview.New 创建列表</li>
+<li>刷新按钮重新加载数据</li>
 </ul>
-<p><font color="#64748B"><i>The launcher runs this from its own folder so the JSON file resolves correctly.</i></font></p>`,
-		dir: "./tableview_demo",
+<p><i>可通过主入口预览，也可直接调试 tableview_demo/main.go。</i></p>`,
+		dir:       "./tableview_demo",
+		buildFunc: example_tableview_demo.BuildView,
+	},
+	{
+		title: "NavigationBar",
+		html: `<h2>NavigationBar</h2>
+<p>iOS 风格顶部导航栏组件演示。</p>
+<b>演示要点：</b>
+<ul>
+<li>UINavigationBar / UINavigationItem 结构</li>
+<li>左右侧 BarButtonItem 动态添加</li>
+<li>标题居中与底部分割线</li>
+<li>动态修改背景色与导航栈模拟</li>
+</ul>`,
+		dir:       "./navigationbar",
+		buildFunc: example_navigationbar.BuildView,
+	},
+	{
+		title: "Auth",
+		html: `<h2>Auth</h2>
+<p>高仿 iOS/MacOS 的登录视图与导航栏综合演示。</p>
+<b>演示要点：</b>
+<ul>
+<li>UIWindow 作为基础窗口承载子视图</li>
+<li>UINavigationBar 提供顶部导航</li>
+<li>LoginView 提供用户认证界面</li>
+<li>组件间通过 AddSubview 组合</li>
+</ul>`,
+		dir:       "./auth",
+		buildFunc: example_auth.BuildView,
+	},
+	{
+		title: "LoginView",
+		html: `<h2>LoginView</h2>
+<p>登录面板组件的独立演示。</p>
+<b>演示要点：</b>
+<ul>
+<li>LoginView 账号密码输入区域</li>
+<li>OnLoginClick 回调直接获取账密</li>
+<li>作为普通 UIView 子视图加入页面</li>
+</ul>`,
+		dir:       "./loginview",
+		buildFunc: example_loginview.BuildView,
 	},
 }
 
@@ -150,108 +199,95 @@ func main() {
 	runtime.LockOSThread()
 
 	win := fltk_bridge.NewWindow(winW, winH, "FLTK2Go — Examples Launcher")
-	win.SetColor(panel)
 
 	// Tile covers the whole window and provides the draggable split handle.
 	tile := fltk_bridge.NewTile(0, 0, winW, winH)
-	tile.SetColor(panel)
 
 	// ── Left panel: example list ──────────────────────────────────────────
-	leftGrp := fltk_bridge.NewGroup(0, 0, initSplit, winH)
-	leftGrp.SetColor(slate)
-	leftGrp.SetBox(fltk_bridge.FLAT_BOX)
+	leftGrp := fltk_bridge.NewGroup(0, 0, leftSplit, winH)
 
-	brand := fltk_bridge.NewBox(fltk_bridge.FLAT_BOX, 0, 0, initSplit, 86, "  FLTK2Go\n  Examples")
-	brand.SetColor(ink)
-	brand.SetLabelColor(white)
-	brand.SetLabelFont(fltk_bridge.HELVETICA_BOLD)
-	brand.SetLabelSize(18)
-	brand.SetAlign(fltk_bridge.ALIGN_LEFT | fltk_bridge.ALIGN_INSIDE)
+	listHdr := fltk_bridge.NewBox(fltk_bridge.UP_BOX, 0, 0, leftSplit, 32, "Examples")
+	listHdr.SetLabelFont(fltk_bridge.HELVETICA_BOLD)
+	listHdr.SetLabelSize(13)
 
-	listHint := fltk_bridge.NewBox(fltk_bridge.FLAT_BOX, 0, 86, initSplit, 34, "  Select a demo")
-	listHint.SetColor(slate)
-	listHint.SetLabelColor(fltk_bridge.Color(0xCBD5E100))
-	listHint.SetLabelSize(12)
-	listHint.SetAlign(fltk_bridge.ALIGN_LEFT | fltk_bridge.ALIGN_INSIDE)
-
-	browser := fltk_bridge.NewHoldBrowser(16, 124, initSplit-32, winH-148)
-	browser.SetBox(fltk_bridge.ROUNDED_BOX)
-	browser.SetColor(muted)
-	browser.SetSelectionColor(accent)
-	browser.SetLabelColor(white)
-	for i, e := range examples {
+	browser := fltk_bridge.NewHoldBrowser(0, 32, leftSplit, winH-32)
+	for _, e := range examples {
 		browser.Add(e.title)
-		if i == 0 {
-			browser.SetValue(1)
-		}
 	}
 	browser.End() // HoldBrowser is a Group subclass; restore leftGrp as current.
 
 	leftGrp.Resizable(browser)
 	leftGrp.End()
 
-	// ── Right panel: preview ──────────────────────────────────────────────
-	rW := winW - initSplit
-	rightGrp := fltk_bridge.NewGroup(initSplit, 0, rW, winH)
-	rightGrp.SetColor(panel)
-	rightGrp.SetBox(fltk_bridge.FLAT_BOX)
+	// ── Middle panel: description ──────────────────────────────────────────────
+	midW := middleSplit - leftSplit
+	midGrp := fltk_bridge.NewGroup(leftSplit, 0, midW, winH)
 
-	topPad := fltk_bridge.NewBox(fltk_bridge.FLAT_BOX, initSplit, 0, rW, 24, "")
-	topPad.SetColor(panel)
-
-	titleBar := fltk_bridge.NewBox(fltk_bridge.FLAT_BOX, initSplit+32, 24, rW-64, 72,
-		"Select an example")
-	titleBar.SetColor(panel)
-	titleBar.SetLabelColor(ink)
+	titleBar := fltk_bridge.NewBox(fltk_bridge.UP_BOX, leftSplit, 0, midW, 44,
+		"  Description")
 	titleBar.SetLabelFont(fltk_bridge.HELVETICA_BOLD)
-	titleBar.SetLabelSize(22)
+	titleBar.SetLabelSize(15)
 	titleBar.SetAlign(fltk_bridge.ALIGN_LEFT | fltk_bridge.ALIGN_INSIDE)
 
-	card := fltk_bridge.NewBox(fltk_bridge.ROUNDED_BOX, initSplit+32, 112, rW-64, winH-210, "")
-	card.SetColor(white)
+	helpView := fltk_bridge.NewHelpView(leftSplit, 44, midW, winH-44-58)
+	helpView.SetValue(
+		`<p><font color="#999999">← 从左侧列表选择一个示例，查看说明并在右侧预览。</font></p>`)
+	helpView.TextSize(13)
 
-	helpView := fltk_bridge.NewHelpView(initSplit+54, 134, rW-108, winH-254)
-	helpView.SetValue(examples[0].html)
-	helpView.TextSize(14)
-
-	footer := fltk_bridge.NewBox(fltk_bridge.FLAT_BOX, initSplit+32, winH-82, rW-64, 1, "")
-	footer.SetColor(line)
-
-	runBtn := fltk_bridge.NewButton(initSplit+32, winH-64, 220, 44,
-		"Run selected demo")
-	runBtn.SetBox(fltk_bridge.ROUNDED_BOX)
-	runBtn.SetColor(accent)
-	runBtn.SetLabelColor(white)
+	runBtn := fltk_bridge.NewButton(leftSplit+10, winH-48, midW-20, 38,
+		"Run Selected Example in New Process")
+	runBtn.SetColor(fltk_bridge.Color(0x42A5F500))
+	runBtn.SetLabelColor(fltk_bridge.Color(0xFFFFFF00))
 	runBtn.SetLabelFont(fltk_bridge.HELVETICA_BOLD)
-	runBtn.SetLabelSize(14)
+	runBtn.SetLabelSize(13)
 
-	status := fltk_bridge.NewBox(fltk_bridge.FLAT_BOX, initSplit+272, winH-64, rW-304, 44, "Ready — examples run with go run from their own folders")
-	status.SetColor(panel)
-	status.SetLabelColor(fltk_bridge.Color(0x64748B00))
-	status.SetLabelSize(12)
-	status.SetAlign(fltk_bridge.ALIGN_LEFT | fltk_bridge.ALIGN_INSIDE)
+	midGrp.Resizable(helpView)
+	midGrp.End()
 
-	rightGrp.Resizable(card)
+	// ── Right panel: preview ──────────────────────────────────────────────
+	rightW := winW - middleSplit
+	rightGrp := fltk_bridge.NewGroup(middleSplit, 0, rightW, winH)
+
+	previewTitle := fltk_bridge.NewBox(fltk_bridge.UP_BOX, middleSplit, 0, rightW, 44,
+		"  Preview")
+	previewTitle.SetLabelFont(fltk_bridge.HELVETICA_BOLD)
+	previewTitle.SetLabelSize(15)
+	previewTitle.SetAlign(fltk_bridge.ALIGN_LEFT | fltk_bridge.ALIGN_INSIDE)
+
+	previewArea := fltk_bridge.NewGroup(middleSplit, 44, rightW, winH-44)
+	previewArea.End()
+
+	rightGrp.Resizable(previewArea)
 	rightGrp.End()
 
 	tile.End()
 
-	selectExample := func(idx int) {
+	// Create a UIView for previewArea so BuildView can use it
+	previewView := &view.UIView{}
+	previewView.BindRaw(previewArea)
+	previewView.BindHost(previewArea)
+
+	// ── Callbacks ─────────────────────────────────────────────────────────
+	browser.SetCallback(func() {
+		idx := browser.Value() - 1 // FLTK browser is 1-based
 		if idx < 0 || idx >= len(examples) {
 			return
 		}
 		e := examples[idx]
-		titleBar.SetLabel(e.title)
+		titleBar.SetLabel("  " + e.title)
 		titleBar.Redraw()
 		helpView.SetValue(e.html)
-		status.SetLabel("Ready — " + e.subtitle)
-		status.Redraw()
-	}
-	selectExample(0)
 
-	// ── Callbacks ─────────────────────────────────────────────────────────
-	browser.SetCallback(func() {
-		selectExample(browser.Value() - 1) // FLTK browser is 1-based
+		// Clear the preview area
+		previewArea.Clear()
+
+		// Build the new view
+		if e.buildFunc != nil {
+			previewArea.Begin()
+			e.buildFunc(previewView)
+			previewArea.End()
+		}
+		previewArea.Redraw()
 	})
 
 	runBtn.SetCallback(func() {
@@ -260,12 +296,9 @@ func main() {
 			return
 		}
 		wd, _ := os.Getwd()
-		exampleDir := filepath.Join(wd, examples[idx].dir)
-		cmd := exec.Command("go", "run", ".")
-		cmd.Dir = exampleDir
+		cmd := exec.Command("go", "run", examples[idx].dir+"/main.go")
+		cmd.Dir = wd
 		_ = cmd.Start()
-		status.SetLabel("Launching — " + examples[idx].title)
-		status.Redraw()
 	})
 
 	win.Show()

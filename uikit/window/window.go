@@ -33,6 +33,7 @@ func NewWindowWithRect(rect *foundation.Rect, title string) *UIWindow {
 	}
 
 	win := fltk_bridge.NewWindowWithPosition(rect.X, rect.Y, rect.Width, rect.Height, title)
+	win.Resizable(win)
 
 	u := &UIWindow{
 		raw:  win,
@@ -57,6 +58,17 @@ func (w *UIWindow) Show() {
 		return
 	}
 	w.raw.Show()
+}
+
+func (w *UIWindow) SetResizable(resizable bool) {
+	if w == nil || w.raw == nil {
+		return
+	}
+	if resizable {
+		w.raw.Resizable(w.raw)
+	} else {
+		w.raw.Resizable(nil)
+	}
 }
 
 func (w *UIWindow) Raw() *fltk_bridge.Window {

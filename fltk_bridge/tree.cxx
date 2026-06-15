@@ -61,4 +61,20 @@ const int go_FL_TREE_SELECT_SINGLE_DRAGGABLE = (int)FL_TREE_SELECT_SINGLE_DRAGGA
 
 void go_fltk_Tree_set_select_mode(Fl_Tree *tree, int selectMode) {
   tree->selectmode((Fl_Tree_Select)selectMode);
-}  
+}
+
+Fl_Tree_Item* go_fltk_Tree_callback_item(Fl_Tree* tree) {
+  return tree->callback_item();
+}
+
+int go_fltk_Tree_callback_reason(Fl_Tree* tree) {
+  return (int)tree->callback_reason();
+}
+
+const char* go_fltk_Tree_item_pathname(Fl_Tree* tree, Fl_Tree_Item* item) {
+  static char buffer[1024];
+  if (tree->item_pathname(buffer, sizeof(buffer), item) == 0) {
+    return buffer;
+  }
+  return "";
+}
