@@ -13,7 +13,7 @@ jobs:
       UPLOAD_URL: ${{ steps.stepCreateRelease.outputs.upload_url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get latest tag
         run: |
@@ -27,33 +27,14 @@ jobs:
           custom_tag: ${{ env.LATEST_TAG }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check changelog exists
-        id: check_changelog
-        run: |
-          FILE="changelog/${LATEST_TAG}.md"
-          if [ -f "$FILE" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Step GitHub release (with changelog)
-        if: steps.check_changelog.outputs.exists == 'true'
+      - name: Step GitHub release
+        id: stepCreateRelease
         uses: ncipollo/release-action@v1
         with:
           skipIfReleaseExists: 'true'
           tag: ${{ env.LATEST_TAG }}
           name: ${{ env.LATEST_TAG }}
           bodyFile: changelog/${{ env.LATEST_TAG }}.md
-
-      - name: Step GitHub release (no changelog)
-        if: steps.check_changelog.outputs.exists != 'true'
-        uses: ncipollo/release-action@v1
-        with:
-          skipIfReleaseExists: 'true'
-          tag: ${{ env.LATEST_TAG }}
-          name: ${{ env.LATEST_TAG }}
-
 
   Build:
     runs-on: ${{ matrix.os }}
@@ -63,7 +44,7 @@ jobs:
         os: [macos-latest, windows-latest]
     steps:
       - name: CheckOut
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set APP_VERSION env
         if: runner.os == 'Linux' || runner.os == 'macOS'
@@ -147,7 +128,7 @@ jobs:
     needs: Build
     steps:
       - name: CheckOut
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set APP_VERSION env
         run: |

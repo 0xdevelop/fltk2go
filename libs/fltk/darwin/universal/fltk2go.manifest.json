@@ -7,7 +7,7 @@
   },
   "build": {
     "toolchain": "cmake+clang",
-    "date": "2026-01-04T12:11:59Z",
+    "date": "2026-06-15T13:15:19Z",
     "git_rev": "9c70ea95a176933ffd575022d145c284d1fc9ef7"
   },
   "artifacts": {
