@@ -211,6 +211,8 @@ curl -s -X POST http://127.0.0.1:8765/debug/automation/click \
 
 Current launcher coverage includes stable IDs and state assertions for Counter, Input, and Slider & Progress. For example, `slider.max` updates `slider.volume.progress.value` and `slider.brightness.progress.value` to `100`.
 
+For Claude Code / Codex integration patterns, prompts, MCP JSON-RPC examples, covered automation IDs, and troubleshooting, see [`docs/AUTOMATION_AGENT_GUIDE.md`](docs/AUTOMATION_AGENT_GUIDE.md).
+
 ### UIKit 代码片段示范
 
 通过 `uikit` 快速创建一个现代化的窗口和组件：
