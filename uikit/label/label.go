@@ -53,6 +53,9 @@ func NewUILabelWithOptions(r *foundation.Rect, text string, style LabelStyle) *U
 		style: style,
 	}
 	l.v.BindRaw(b)
+	l.v.SetAutomationRole("text").SetAutomationName(text).SetAutomationValueHandler(func() (string, bool) {
+		return l.text, true
+	})
 
 	l.SetText(text)
 
@@ -113,6 +116,7 @@ func (l *UILabel) SetText(s string) {
 		return
 	}
 	l.text = s
+	l.v.SetAutomationName(s)
 	if s != "" {
 		l.preparedText = textlayout.Prepare(s, l.style.Font, l.style.FontSize)
 	} else {

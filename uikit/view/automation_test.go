@@ -86,4 +86,33 @@ func TestAutomationIDLifecycleAndChildren(t *testing.T) {
 	if _, ok := AutomationLookup("demo.child.renamed"); ok {
 		t.Fatal("automation id still registered after clear")
 	}
+	parent.ClearAutomationChildren()
+	if node := parent.AutomationSnapshot(); len(node.Children) != 0 {
+		t.Fatalf("children after clear = %#v", node.Children)
+	}
+}
+
+func TestAutomationValueHandlerAndUnregisterPrefix(t *testing.T) {
+	v1 := (&UIView{}).SetAutomationID("prefix.one").SetAutomationValueHandler(func() (string, bool) {
+		return "42", true
+	})
+	v2 := (&UIView{}).SetAutomationID("prefix.two")
+	v3 := (&UIView{}).SetAutomationID("other.three")
+	defer v1.SetAutomationID("")
+	defer v2.SetAutomationID("")
+	defer v3.SetAutomationID("")
+
+	if got := v1.AutomationSnapshot().Value; got != "42" {
+		t.Fatalf("value = %q, want 42", got)
+	}
+	AutomationUnregisterPrefix("prefix.")
+	if _, ok := AutomationLookup("prefix.one"); ok {
+		t.Fatal("prefix.one still registered")
+	}
+	if _, ok := AutomationLookup("prefix.two"); ok {
+		t.Fatal("prefix.two still registered")
+	}
+	if _, ok := AutomationLookup("other.three"); !ok {
+		t.Fatal("other.three should remain registered")
+	}
 }

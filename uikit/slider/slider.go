@@ -1,6 +1,8 @@
 package slider
 
 import (
+	"fmt"
+
 	"github.com/0xYeah/fltk2go/fltk_bridge"
 	"github.com/0xYeah/fltk2go/foundation"
 	"github.com/0xYeah/fltk2go/uikit/view"
@@ -46,6 +48,9 @@ func NewUISliderWithOptions(r *foundation.Rect, style SliderStyle) *UISlider {
 
 	s := &UISlider{raw: raw, style: style}
 	s.v.BindRaw(raw)
+	s.v.SetAutomationRole("slider").SetAutomationValueHandler(func() (string, bool) {
+		return fmt.Sprintf("%g", s.Value()), true
+	})
 	s.ApplyStyle(style)
 	return s
 }

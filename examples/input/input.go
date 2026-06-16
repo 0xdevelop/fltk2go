@@ -63,30 +63,35 @@ func BuildView(parent *view.UIView) view.Viewable {
 
 	fieldLabel(parent, 84, 190, "TEXT")
 	textInput := uiinput.New(84, 212, 320, 38, "")
+	textInput.View().SetAutomationID("input.text").SetAutomationName("Text input")
 	textInput.SetFontSize(14)
 	textInput.SetBackgroundColor(InputField)
 	parent.AddSubview(textInput)
 
 	fieldLabel(parent, 84, 264, "INTEGER")
 	intInput := uiinput.NewWithType(84, 286, 320, 38, "", uiinput.IntInput)
+	intInput.View().SetAutomationID("input.integer").SetAutomationName("Integer input")
 	intInput.SetFontSize(14)
 	intInput.SetBackgroundColor(InputField)
 	parent.AddSubview(intInput)
 
 	fieldLabel(parent, 84, 338, "FLOAT")
 	floatInput := uiinput.NewWithType(84, 360, 320, 38, "", uiinput.FloatInput)
+	floatInput.View().SetAutomationID("input.float").SetAutomationName("Float input")
 	floatInput.SetFontSize(14)
 	floatInput.SetBackgroundColor(InputField)
 	parent.AddSubview(floatInput)
 
 	fieldLabel(parent, 84, 412, "PASSWORD")
 	secretInput := uiinput.New(84, 434, 320, 38, "")
+	secretInput.View().SetAutomationID("input.password").SetAutomationName("Password input")
 	secretInput.SetFontSize(14)
 	secretInput.SetBackgroundColor(InputField)
 	parent.AddSubview(secretInput)
 
 	fieldLabel(parent, 510, 190, "MULTILINE NOTE")
 	multilineInput := uiinput.New(510, 212, 296, 94, "")
+	multilineInput.View().SetAutomationID("input.note").SetAutomationName("Multiline note")
 	multilineInput.SetFontSize(14)
 	multilineInput.SetBackgroundColor(InputField)
 	parent.AddSubview(multilineInput)
@@ -98,6 +103,7 @@ func BuildView(parent *view.UIView) view.Viewable {
 	parent.AddSubview(previewTitle)
 
 	displayLabel := label.NewUILabel(&foundation.Rect{X: 510, Y: 332, Width: 296, Height: 144}, "Input values will appear here")
+	displayLabel.View().SetAutomationID("input.preview").SetAutomationName("Input preview")
 	displayLabel.SetFontSize(14)
 	displayLabel.SetAlignment(fltk_bridge.ALIGN_LEFT | fltk_bridge.ALIGN_INSIDE)
 	displayLabel.SetBackgroundColor(0xF8FAFC00)
@@ -106,11 +112,13 @@ func BuildView(parent *view.UIView) view.Viewable {
 	parent.AddSubview(displayLabel)
 
 	updateBtn := button.NewUIButton(&foundation.Rect{X: 84, Y: 560, Width: 170, Height: 44}, "Update preview")
+	updateBtn.View().SetAutomationID("input.update_preview").SetAutomationName("Update preview")
 	updateBtn.SetBackgroundColor(InputPrimary)
 	updateBtn.SetTitleColor(InputWhite)
 	parent.AddSubview(updateBtn)
 
 	clearBtn := button.NewUIButton(&foundation.Rect{X: 274, Y: 560, Width: 132, Height: 44}, "Clear")
+	clearBtn.View().SetAutomationID("input.clear").SetAutomationName("Clear form")
 	clearBtn.SetBackgroundColor(InputOrange)
 	clearBtn.SetTitleColor(InputWhite)
 	parent.AddSubview(clearBtn)

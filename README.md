@@ -141,6 +141,7 @@ startButton.View().
 ```
 
 Use globally unique, stable IDs such as `screen.section.control`. Do not use localized button text, random values, or unstable row indexes as IDs. `UIButton` automatically exposes role/name and click actions after `OnTouchUpInside`; `Input` automatically exposes role/name and text get/set handlers.
+`UILabel`, `UISlider`, and `UIProgressView` expose their current state through the snapshot `value` field so agents can assert UI changes without parsing pixels.
 
 Run a debug build:
 
@@ -187,6 +188,28 @@ curl -s http://127.0.0.1:8765/mcp \
 ```
 
 Tool results include both `structuredContent` for agents and `content[0].text` containing the same JSON for simple clients. `fltk_wait` currently waits for automation ID registration only; follow actions with another `fltk_snapshot` to verify visual/application state.
+
+The aggregate `examples/` launcher is automation-enabled when started with the same environment. It defaults to the Counter example and lets agents switch previews through the launcher list node:
+
+```shell
+cd examples
+FLTK2GO_AUTOMATION_DEBUG=1 FLTK2GO_AUTOMATION_ADDR=127.0.0.1:8765 go run .
+
+# Switch the right-hand preview to Input.
+curl -s -X POST http://127.0.0.1:8765/debug/automation/set_text \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"examples.launcher.list","text":"Input"}'
+
+# Fill fields, click Update preview, then assert input.preview.value.
+curl -s -X POST http://127.0.0.1:8765/debug/automation/set_text \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"input.text","text":"hello"}'
+curl -s -X POST http://127.0.0.1:8765/debug/automation/click \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"input.update_preview"}'
+```
+
+Current launcher coverage includes stable IDs and state assertions for Counter, Input, and Slider & Progress. For example, `slider.max` updates `slider.volume.progress.value` and `slider.brightness.progress.value` to `100`.
 
 ### UIKit 代码片段示范
 

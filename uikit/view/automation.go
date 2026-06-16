@@ -3,6 +3,7 @@ package view
 import (
 	"errors"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/0xYeah/fltk2go/fltk_bridge"
@@ -25,6 +26,7 @@ type automationState struct {
 	click    func() error
 	setText  func(string) error
 	getText  func() (string, bool)
+	getValue func() (string, bool)
 	children []*UIView
 }
 
@@ -48,6 +50,7 @@ type AutomationNode struct {
 	Name       string            `json:"name,omitempty"`
 	Label      string            `json:"label,omitempty"`
 	Text       string            `json:"text,omitempty"`
+	Value      string            `json:"value,omitempty"`
 	Actions    []string          `json:"actions,omitempty"`
 	Enabled    bool              `json:"enabled"`
 	Visible    bool              `json:"visible"`
@@ -134,6 +137,13 @@ func (v *UIView) SetAutomationTextHandlers(set func(string) error, get func() (s
 	return v
 }
 
+func (v *UIView) SetAutomationValueHandler(get func() (string, bool)) *UIView {
+	if v != nil {
+		v.automation.getValue = get
+	}
+	return v
+}
+
 func (v *UIView) AddAutomationChild(child Viewable) *UIView {
 	if v == nil || child == nil {
 		return v
@@ -151,11 +161,31 @@ func (v *UIView) AddAutomationChild(child Viewable) *UIView {
 	return v
 }
 
+func (v *UIView) ClearAutomationChildren() *UIView {
+	if v != nil {
+		v.automation.children = nil
+	}
+	return v
+}
+
 func AutomationLookup(id string) (*UIView, bool) {
 	automationRegistry.RLock()
 	defer automationRegistry.RUnlock()
 	v, ok := automationRegistry.byID[id]
 	return v, ok
+}
+
+func AutomationUnregisterPrefix(prefix string) {
+	if prefix == "" {
+		return
+	}
+	automationRegistry.Lock()
+	defer automationRegistry.Unlock()
+	for id := range automationRegistry.byID {
+		if strings.HasPrefix(id, prefix) {
+			delete(automationRegistry.byID, id)
+		}
+	}
 }
 
 func AutomationClick(id string) error {
@@ -240,6 +270,11 @@ func (v *UIView) AutomationSnapshot() AutomationNode {
 	if v.automation.getText != nil {
 		if text, ok := v.automation.getText(); ok {
 			node.Text = text
+		}
+	}
+	if v.automation.getValue != nil {
+		if value, ok := v.automation.getValue(); ok {
+			node.Value = value
 		}
 	}
 	if len(v.automation.children) > 0 {
