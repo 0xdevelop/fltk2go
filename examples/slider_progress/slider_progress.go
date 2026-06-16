@@ -58,10 +58,12 @@ func BuildView(parent *view.UIView) view.Viewable {
 	parent.AddSubview(volumeCard)
 
 	volumeTitle, volumeLabel := sectionTitle(78, 142, "Volume", "50", SliderBlue)
+	volumeLabel.View().SetAutomationID("slider.volume.label").SetAutomationName("Volume value label")
 	parent.AddSubview(volumeTitle)
 	parent.AddSubview(volumeLabel)
 
 	volumeSlider := uikit.NewUISlider(&foundation.Rect{X: 78, Y: 196, Width: 604, Height: 34})
+	volumeSlider.View().SetAutomationID("slider.volume").SetAutomationName("Volume slider")
 	volumeSlider.SetMinimumValue(0)
 	volumeSlider.SetMaximumValue(100)
 	volumeSlider.SetValue(50)
@@ -69,6 +71,7 @@ func BuildView(parent *view.UIView) view.Viewable {
 	parent.AddSubview(volumeSlider)
 
 	volumeBar := uikit.NewUIProgressView(&foundation.Rect{X: 78, Y: 230, Width: 604, Height: 16})
+	volumeBar.View().SetAutomationID("slider.volume.progress").SetAutomationName("Volume progress")
 	volumeBar.SetMinimumValue(0)
 	volumeBar.SetMaximumValue(100)
 	volumeBar.SetProgress(50)
@@ -87,10 +90,12 @@ func BuildView(parent *view.UIView) view.Viewable {
 	parent.AddSubview(brightnessCard)
 
 	brightnessTitle, brightnessLabel := sectionTitle(78, 304, "Brightness", "75%", SliderGreen)
+	brightnessLabel.View().SetAutomationID("slider.brightness.label").SetAutomationName("Brightness value label")
 	parent.AddSubview(brightnessTitle)
 	parent.AddSubview(brightnessLabel)
 
 	brightnessSlider := uikit.NewUISlider(&foundation.Rect{X: 78, Y: 358, Width: 604, Height: 34})
+	brightnessSlider.View().SetAutomationID("slider.brightness").SetAutomationName("Brightness slider")
 	brightnessSlider.SetMinimumValue(0)
 	brightnessSlider.SetMaximumValue(100)
 	brightnessSlider.SetValue(75)
@@ -98,6 +103,7 @@ func BuildView(parent *view.UIView) view.Viewable {
 	parent.AddSubview(brightnessSlider)
 
 	brightnessBar := uikit.NewUIProgressView(&foundation.Rect{X: 78, Y: 392, Width: 604, Height: 16})
+	brightnessBar.View().SetAutomationID("slider.brightness.progress").SetAutomationName("Brightness progress")
 	brightnessBar.SetMinimumValue(0)
 	brightnessBar.SetMaximumValue(100)
 	brightnessBar.SetProgress(75)
@@ -111,16 +117,19 @@ func BuildView(parent *view.UIView) view.Viewable {
 	})
 
 	resetBtn := button.NewUIButton(&foundation.Rect{X: 48, Y: 460, Width: 142, Height: 44}, "Reset")
+	resetBtn.View().SetAutomationID("slider.reset").SetAutomationName("Reset sliders")
 	resetBtn.SetBackgroundColor(SliderRed)
 	resetBtn.SetTitleColor(SliderWhite)
 	parent.AddSubview(resetBtn)
 
 	halfBtn := button.NewUIButton(&foundation.Rect{X: 210, Y: 460, Width: 142, Height: 44}, "Set 50%")
+	halfBtn.View().SetAutomationID("slider.set_half").SetAutomationName("Set sliders to 50 percent")
 	halfBtn.SetBackgroundColor(SliderButtonGray)
 	halfBtn.SetTitleColor(SliderWhite)
 	parent.AddSubview(halfBtn)
 
 	maxBtn := button.NewUIButton(&foundation.Rect{X: 372, Y: 460, Width: 142, Height: 44}, "Max")
+	maxBtn.View().SetAutomationID("slider.max").SetAutomationName("Max sliders")
 	maxBtn.SetBackgroundColor(SliderGreen)
 	maxBtn.SetTitleColor(SliderWhite)
 	parent.AddSubview(maxBtn)

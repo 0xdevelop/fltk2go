@@ -16,10 +16,12 @@ const (
 
 func BuildView(parent *view.UIView) view.Viewable {
 	title := label.NewUILabel(&foundation.Rect{X: 20, Y: 20, Width: 560, Height: 40}, "Clicked 0 count")
+	title.View().SetAutomationID("counter.title").SetAutomationName("Counter value")
 	title.SetFontSize(20)
 	title.SetTextColor(GRAY)
 
 	btn := button.NewUIButton(&foundation.Rect{X: 20, Y: 80, Width: 160, Height: 44}, "点我 +1")
+	btn.View().SetAutomationID("counter.increment").SetAutomationName("Increment counter")
 	btn.SetBackgroundColor(BLUE)
 
 	count := 0

@@ -1,6 +1,8 @@
 package progress
 
 import (
+	"fmt"
+
 	"github.com/0xYeah/fltk2go/fltk_bridge"
 	"github.com/0xYeah/fltk2go/foundation"
 	"github.com/0xYeah/fltk2go/uikit/view"
@@ -48,6 +50,9 @@ func NewUIProgressWithOptions(r *foundation.Rect, style ProgressStyle) *UIProgre
 
 	p := &UIProgressView{raw: raw, style: style}
 	p.v.BindRaw(raw)
+	p.v.SetAutomationRole("progressbar").SetAutomationValueHandler(func() (string, bool) {
+		return fmt.Sprintf("%g", p.Value()), true
+	})
 	p.ApplyStyle(style)
 	return p
 }

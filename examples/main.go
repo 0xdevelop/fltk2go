@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
+	"html"
+	"log"
 	"os"
 	"os/exec"
 	"runtime"
 
 	"github.com/0xYeah/fltk2go"
 	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xYeah/fltk2go/uikit/automation"
 	"github.com/0xYeah/fltk2go/uikit/view"
 
 	example_auth "examples/auth"
@@ -266,13 +270,39 @@ func main() {
 	previewView := &view.UIView{}
 	previewView.BindRaw(previewArea)
 	previewView.BindHost(previewArea)
+	previewView.SetAutomationID("examples.preview").
+		SetAutomationName("Examples preview area").
+		SetAutomationRole("region")
+
+	browserAutomation := &view.UIView{}
+	browserAutomation.BindRaw(browser)
+	browserAutomation.SetAutomationID("examples.launcher.list").
+		SetAutomationName("Examples list").
+		SetAutomationRole("listbox").
+		SetAutomationValueHandler(func() (string, bool) {
+			idx := browser.Value() - 1
+			if idx >= 0 && idx < len(examples) {
+				return examples[idx].title, true
+			}
+			return "", true
+		})
+
+	runBtnAutomation := &view.UIView{}
+	runBtnAutomation.BindRaw(runBtn)
+	runBtnAutomation.SetAutomationID("examples.launcher.run_selected").
+		SetAutomationName("Run selected example in new process").
+		SetAutomationRole("button")
 
 	// ── Callbacks ─────────────────────────────────────────────────────────
-	browser.SetCallback(func() {
+	selectExample := func() {
 		idx := browser.Value() - 1 // FLTK browser is 1-based
 		if idx < 0 || idx >= len(examples) {
 			return
 		}
+		view.AutomationUnregisterPrefix("counter.")
+		view.AutomationUnregisterPrefix("input.")
+		view.AutomationUnregisterPrefix("slider.")
+		previewView.ClearAutomationChildren()
 		e := examples[idx]
 		titleBar.SetLabel("  " + e.title)
 		titleBar.Redraw()
@@ -288,9 +318,26 @@ func main() {
 			previewArea.End()
 		}
 		previewArea.Redraw()
+	}
+	browserAutomation.SetAutomationTextHandlers(func(title string) error {
+		for idx, e := range examples {
+			if e.title == title || html.UnescapeString(e.title) == title {
+				browser.SetValue(idx + 1)
+				selectExample()
+				return nil
+			}
+		}
+		return errors.New("example not found")
+	}, func() (string, bool) {
+		idx := browser.Value() - 1
+		if idx >= 0 && idx < len(examples) {
+			return examples[idx].title, true
+		}
+		return "", true
 	})
+	browser.SetCallback(selectExample)
 
-	runBtn.SetCallback(func() {
+	runSelected := func() {
 		idx := browser.Value() - 1
 		if idx < 0 || idx >= len(examples) {
 			return
@@ -299,7 +346,32 @@ func main() {
 		cmd := exec.Command("go", "run", examples[idx].dir+"/main.go")
 		cmd.Dir = wd
 		_ = cmd.Start()
+	}
+	runBtn.SetCallback(runSelected)
+	runBtnAutomation.OnAutomationClick(func() error {
+		runSelected()
+		return nil
 	})
+
+	browser.SetValue(1)
+	selectExample()
+
+	if automation.Enabled() {
+		addr := os.Getenv("FLTK2GO_AUTOMATION_ADDR")
+		if addr == "" {
+			addr = "127.0.0.1:8765"
+		}
+		// FLTK requires Fl::lock() before background goroutines can safely wake
+		// the UI event loop through Fl::awake().
+		fltk_bridge.Lock()
+		srv, err := automation.StartDebugServer(automation.Config{Addr: addr})
+		if err != nil {
+			log.Printf("automation debug server disabled: %v", err)
+		} else {
+			defer srv.Close()
+			log.Printf("automation debug server listening on http://%s", srv.Addr())
+		}
+	}
 
 	win.Show()
 	fltk2go.Run()
