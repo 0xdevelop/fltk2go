@@ -12,6 +12,17 @@
 
 ---
 
+## 📖 实用文档入口
+
+README 保持快速概览；更完整的运行、自动化、Agent、Playwright 集成说明放在 `docs/`：
+
+- [整体运行说明 / Running Guide](docs/RUNNING.md) — 环境、运行 examples、测试、构建、常见问题。
+- [Claude / Codex Automation Guide](docs/AUTOMATION_AGENT_GUIDE.md) — 通过 MCP/HTTP automation bridge 做语义化 GUI 调试。
+- [Playwright Quick Integration](docs/PLAYWRIGHT_INTEGRATION.md) — 用 Playwright test runner 快速接入 FLTK2Go native GUI 自动化。
+- [API Documentation](docs/API_DOCUMENTATION.md) — API 参考文档。
+
+---
+
 ## 🏗 三层架构设计 (Architecture)
 
 fltk2go 采用了清晰的三层架构设计，既保证了底层 C++ API 的高效执行，又为 Go 开发者提供了极其友好的高层封装：
