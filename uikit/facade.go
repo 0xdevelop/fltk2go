@@ -4,8 +4,10 @@ import (
 	"github.com/0xYeah/fltk2go/foundation"
 	"github.com/0xYeah/fltk2go/uikit/button"
 	"github.com/0xYeah/fltk2go/uikit/dialog"
+	"github.com/0xYeah/fltk2go/uikit/group"
 	"github.com/0xYeah/fltk2go/uikit/input"
 	"github.com/0xYeah/fltk2go/uikit/label"
+	"github.com/0xYeah/fltk2go/uikit/menubar"
 	"github.com/0xYeah/fltk2go/uikit/progress"
 	"github.com/0xYeah/fltk2go/uikit/scrollview"
 	"github.com/0xYeah/fltk2go/uikit/slider"
@@ -13,7 +15,10 @@ import (
 	"github.com/0xYeah/fltk2go/uikit/stackview"
 	switchview "github.com/0xYeah/fltk2go/uikit/switch"
 	"github.com/0xYeah/fltk2go/uikit/tableview"
+	"github.com/0xYeah/fltk2go/uikit/tabview"
+	"github.com/0xYeah/fltk2go/uikit/textfield"
 	"github.com/0xYeah/fltk2go/uikit/textview"
+	"github.com/0xYeah/fltk2go/uikit/treeview"
 	"github.com/0xYeah/fltk2go/uikit/view"
 	"github.com/0xYeah/fltk2go/uikit/window"
 )
@@ -21,6 +26,7 @@ import (
 type UIView = view.UIView
 type Viewable = view.Viewable
 type UIWindow = window.UIWindow
+type UIGroup = group.UIGroup
 type UILabel = label.UILabel
 type UIButton = button.UIButton
 type ButtonType = button.ButtonType
@@ -30,6 +36,13 @@ type UITableView = tableview.TableView
 type UITableViewCell = tableview.TableViewCell
 type TableViewDataSource = tableview.DataSource
 type TableViewDelegate = tableview.Delegate
+type UITabView = tabview.UITabView
+type UITreeView = treeview.UITreeView
+type TreeDataSource = treeview.TreeDataSource
+type UIMenuBar = menubar.UIMenuBar
+type UIContextMenu = menubar.UIContextMenu
+type MenuItem = menubar.MenuItem
+type UITextField = textfield.UITextField
 type UISlider = slider.UISlider
 type UIProgressView = progress.UIProgressView
 type UISwitch = switchview.UISwitch
@@ -46,9 +59,10 @@ const (
 	RadioButton    = button.RadioButton
 	ToggleButton   = button.ToggleButton
 
-	TextInput  = input.TextInput
-	IntInput   = input.IntInput
-	FloatInput = input.FloatInput
+	TextInput   = input.TextInput
+	IntInput    = input.IntInput
+	FloatInput  = input.FloatInput
+	SecretInput = input.SecretInput
 
 	AxisVertical   = stackview.AxisVertical
 	AxisHorizontal = stackview.AxisHorizontal
@@ -63,6 +77,10 @@ func NewUIWindow(width, height int, title string) *UIWindow {
 
 func NewWindowWithRect(rect *foundation.Rect, title string) *UIWindow {
 	return window.NewWindowWithRect(rect, title)
+}
+
+func NewUIGroup(r *foundation.Rect) *UIGroup {
+	return group.NewUIGroup(r)
 }
 
 func NewUILabel(r *foundation.Rect, text string) *UILabel {
@@ -91,6 +109,26 @@ func NewUITableView(x, y, width, height int) (*UITableView, error) {
 
 func NewUITableViewCell(reuseID string) *UITableViewCell {
 	return tableview.NewCell(reuseID)
+}
+
+func NewUITabView(r *foundation.Rect) *UITabView {
+	return tabview.NewUITabView(r)
+}
+
+func NewUITreeView(r *foundation.Rect) *UITreeView {
+	return treeview.NewUITreeView(r)
+}
+
+func NewUIMenuBar(r *foundation.Rect) *UIMenuBar {
+	return menubar.NewUIMenuBar(r)
+}
+
+func NewUIContextMenu(r *foundation.Rect) *UIContextMenu {
+	return menubar.NewUIContextMenu(r)
+}
+
+func NewUITextField(x, y, width, height int, placeholder string) *UITextField {
+	return textfield.NewUITextField(x, y, width, height, placeholder)
 }
 
 func NewUISlider(r *foundation.Rect) *UISlider {

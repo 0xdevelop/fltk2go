@@ -98,7 +98,8 @@ func main() {
 }
 ```
 
-Current UIKit wrappers include `UILabel`, `UIButton`, `Input`, `UITableView`,
+Current UIKit facade wrappers include `UILabel`, `UIButton`, `Input`, `UITextField`,
+`UITableView`, `UITreeView`, `UITabView`, `UIMenuBar`, `UIContextMenu`, `UIGroup`,
 `UISlider`, `UIProgressView`, `UISwitch`, `UIScrollView`, `UISplitView`,
 `UIStackView`, and `UITextView`, plus root facade dialog helpers
 `uikit.Message`, `uikit.Alert`, and `uikit.Choice`.
