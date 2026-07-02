@@ -1,8 +1,8 @@
 package input
 
 import (
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 // Input 输入框组件

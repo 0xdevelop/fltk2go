@@ -8,10 +8,10 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/0xYeah/fltk2go"
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/uikit/automation"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/uikit/automation"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 
 	example_auth "examples/auth"
 	example_comprehensive "examples/comprehensive"

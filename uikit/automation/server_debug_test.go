@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 func TestStartDebugServerRequiresEnv(t *testing.T) {

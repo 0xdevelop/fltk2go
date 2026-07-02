@@ -1,12 +1,12 @@
 package alert
 
 import (
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit/button"
-	"github.com/0xYeah/fltk2go/uikit/label"
-	"github.com/0xYeah/fltk2go/uikit/view"
-	"github.com/0xYeah/fltk2go/uikit/window"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit/button"
+	"github.com/0xdevelop/fltk2go/uikit/label"
+	"github.com/0xdevelop/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/uikit/window"
 )
 
 type UIAlert struct {

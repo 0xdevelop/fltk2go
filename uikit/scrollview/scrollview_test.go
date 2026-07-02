@@ -3,10 +3,10 @@ package scrollview_test
 import (
 	"testing"
 
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit/scrollview"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit/scrollview"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 // mockViewable 实现一个简单的 Viewable

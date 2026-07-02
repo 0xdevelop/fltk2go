@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xYeah/fltk2go/config"
+	"github.com/0xdevelop/fltk2go/config"
 )
 
 type fltk2goManifest struct {
@@ -93,7 +93,7 @@ func writeManifestForTarget(ctx *buildCtx, outGOOS, outArch string) {
 
 	var m fltk2goManifest
 	// 如果你 module path 不是这个，改成你 go.mod 里的 module 行
-	m.Module = "github.com/0xYeah/fltk2go"
+	m.Module = "github.com/0xdevelop/fltk2go"
 	m.FLTKVersion = config.FLTKPreBuildVersion
 	m.Target.GOOS = outGOOS
 	m.Target.OutArch = outArch

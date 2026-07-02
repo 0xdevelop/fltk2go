@@ -1,11 +1,11 @@
 package loginview
 
 import (
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit/button"
-	"github.com/0xYeah/fltk2go/uikit/textfield"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit/button"
+	"github.com/0xdevelop/fltk2go/uikit/textfield"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 // LoginView 复合组件

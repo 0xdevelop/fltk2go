@@ -4,8 +4,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit/loginview"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit/loginview"
 )
 
 func init() {

@@ -6,8 +6,8 @@ import (
 	"runtime"
 
 	"examples/tableview"
-	"github.com/0xYeah/fltk2go"
-	"github.com/0xYeah/fltk2go/uikit/window"
+	"github.com/0xdevelop/fltk2go"
+	"github.com/0xdevelop/fltk2go/uikit/window"
 )
 
 func main() {

@@ -3,12 +3,12 @@ package slider_progress
 import (
 	"fmt"
 
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit"
-	"github.com/0xYeah/fltk2go/uikit/button"
-	"github.com/0xYeah/fltk2go/uikit/label"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit"
+	"github.com/0xdevelop/fltk2go/uikit/button"
+	"github.com/0xdevelop/fltk2go/uikit/label"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 const (

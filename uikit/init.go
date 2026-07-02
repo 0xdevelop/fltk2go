@@ -1,7 +1,7 @@
 package uikit
 
 import (
-	"github.com/0xYeah/fltk2go/lang"
+	"github.com/0xdevelop/fltk2go/lang"
 )
 
 // Init 初始化UIKit

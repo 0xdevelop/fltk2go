@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/0xYeah/fltk2go/config"
+	"github.com/0xdevelop/fltk2go/config"
 )
 
 var (

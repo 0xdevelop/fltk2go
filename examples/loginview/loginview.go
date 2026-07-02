@@ -2,9 +2,9 @@ package loginview
 
 import (
 	"fmt"
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit/loginview"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit/loginview"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 func BuildView(parent *view.UIView) view.Viewable {

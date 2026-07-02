@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
 )
 
 // SegmentType identifies the type of a text segment.

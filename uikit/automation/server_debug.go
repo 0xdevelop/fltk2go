@@ -14,8 +14,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 var ErrDisabled = errors.New("fltk2go automation debug server is disabled; set FLTK2GO_AUTOMATION_DEBUG=1")

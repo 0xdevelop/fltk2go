@@ -1,6 +1,6 @@
 package tableview
 
-import "github.com/0xYeah/fltk2go/fltk_bridge"
+import "github.com/0xdevelop/fltk2go/fltk_bridge"
 
 // BridgeTable is the minimal interface TableView needs from the underlying FLTK table.
 type BridgeTable interface {

@@ -2,7 +2,7 @@ module examples
 
 go 1.25.0
 
-require github.com/0xYeah/fltk2go v0.0.1
+require github.com/0xdevelop/fltk2go v0.0.1
 
 require (
 	github.com/gen2brain/shm v0.2.1 // indirect
@@ -13,4 +13,4 @@ require (
 	golang.org/x/sys v0.46.0 // indirect
 )
 
-replace github.com/0xYeah/fltk2go => ../
+replace github.com/0xdevelop/fltk2go => ../

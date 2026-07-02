@@ -1,9 +1,9 @@
 package layout
 
 import (
-	"github.com/0xYeah/fltk2go/fltk_bridge"
-	"github.com/0xYeah/fltk2go/uikit/textlayout"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/uikit/textlayout"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 )
 
 // Rect represents a bounding box in 2D space.

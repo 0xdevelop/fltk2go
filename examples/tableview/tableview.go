@@ -1,10 +1,10 @@
 package tableview
 
 import (
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit/button"
-	"github.com/0xYeah/fltk2go/uikit/tableview"
-	"github.com/0xYeah/fltk2go/uikit/view"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit/button"
+	"github.com/0xdevelop/fltk2go/uikit/tableview"
+	"github.com/0xdevelop/fltk2go/uikit/view"
 	"strconv"
 )
 

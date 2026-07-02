@@ -1,6 +1,6 @@
 package dialog
 
-import "github.com/0xYeah/fltk2go/fltk_bridge"
+import "github.com/0xdevelop/fltk2go/fltk_bridge"
 
 // Message presents an informational modal dialog.
 func Message(title, message string) {

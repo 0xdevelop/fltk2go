@@ -1,6 +1,6 @@
 package view
 
-import "github.com/0xYeah/fltk2go/fltk_bridge"
+import "github.com/0xdevelop/fltk2go/fltk_bridge"
 
 // Container：任何能容纳子控件的对象（Window/Group）
 // 你 fltk_bridge.Window 继承了 Group，天然满足 Add/Remove

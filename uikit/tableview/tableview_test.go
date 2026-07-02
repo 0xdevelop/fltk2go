@@ -3,7 +3,7 @@ package tableview
 import (
 	"testing"
 
-	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
 )
 
 type fakeBridgeTable struct {

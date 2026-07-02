@@ -1,7 +1,7 @@
 package tableview
 
 import (
-	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
 )
 
 // bridgeTableImpl 实现了 BridgeTable 接口，使用 fltk_bridge.TableRow 作为底层实现
