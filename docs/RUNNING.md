@@ -39,9 +39,9 @@ package main
 import (
     "runtime"
 
-    "github.com/0xYeah/fltk2go"
-    "github.com/0xYeah/fltk2go/foundation"
-    "github.com/0xYeah/fltk2go/uikit"
+    "github.com/0xdevelop/fltk2go"
+    "github.com/0xdevelop/fltk2go/foundation"
+    "github.com/0xdevelop/fltk2go/uikit"
 )
 
 func main() {

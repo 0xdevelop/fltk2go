@@ -55,7 +55,7 @@ fltk2go/
 ### 安装
 
 ```shell
-go get github.com/0xYeah/fltk2go@latest
+go get github.com/0xdevelop/fltk2go@latest
 ```
 
 UIKit-style controls are available from the root `uikit` package as a facade, while existing subpackage imports remain supported.
@@ -66,9 +66,9 @@ package main
 import (
 	"runtime"
 
-	"github.com/0xYeah/fltk2go"
-	"github.com/0xYeah/fltk2go/foundation"
-	"github.com/0xYeah/fltk2go/uikit"
+	"github.com/0xdevelop/fltk2go"
+	"github.com/0xdevelop/fltk2go/foundation"
+	"github.com/0xdevelop/fltk2go/uikit"
 )
 
 func main() {
@@ -132,7 +132,7 @@ Debug-only behavior:
 - `Config.DirectActions` is only for unit tests without an FLTK event loop; real debug apps should leave it false.
 
 ```go
-import "github.com/0xYeah/fltk2go/uikit/automation"
+import "github.com/0xdevelop/fltk2go/uikit/automation"
 
 if automation.Enabled() {
 	srv, err := automation.StartDebugServer(automation.Config{Addr: "127.0.0.1:8765"})

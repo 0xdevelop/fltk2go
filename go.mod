@@ -1,4 +1,4 @@
-module github.com/0xYeah/fltk2go
+module github.com/0xdevelop/fltk2go
 
 go 1.25.0
 

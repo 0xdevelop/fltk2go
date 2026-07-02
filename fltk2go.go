@@ -2,8 +2,8 @@ package fltk2go
 
 import "C"
 import (
-	"github.com/0xYeah/fltk2go/config"
-	"github.com/0xYeah/fltk2go/fltk_bridge"
+	"github.com/0xdevelop/fltk2go/config"
+	"github.com/0xdevelop/fltk2go/fltk_bridge"
 )
 
 func Run() int {

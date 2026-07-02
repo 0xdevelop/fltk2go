@@ -1,5 +1,5 @@
 {
-  "module": "github.com/0xYeah/fltk2go",
+  "module": "github.com/0xdevelop/fltk2go",
   "fltk_version": "release-1.4.4",
   "target": {
     "goos": "linux",

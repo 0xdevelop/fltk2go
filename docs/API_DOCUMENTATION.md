@@ -43,7 +43,7 @@ The `fltk2go` package provides an interface to the FLTK (Fast, Light Toolkit) li
 ```go
 package main
 
-import "github.com/0xYeah/fltk2go"
+import "github.com/0xdevelop/fltk2go"
 
 func main() {
     window := fltk2go.NewWindow("My Window", 800, 600)
