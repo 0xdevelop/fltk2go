@@ -1,8 +1,17 @@
 package terminalview
 
+import (
+	"bytes"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+)
+
 const (
-	terminalEscape byte = 0x1b
-	terminalBell   byte = 0x07
+	terminalEscape        byte = 0x1b
+	terminalBell          byte = 0x07
+	maxOSCPayload              = 4096
+	maxTerminalTitleRunes      = 128
 )
 
 type terminalStreamState uint8
@@ -22,12 +31,18 @@ const (
 type terminalStreamFilter struct {
 	state          terminalStreamState
 	csi            []byte
+	osc            []byte
+	oscDiscard     bool
+	titles         []string
 	bracketedPaste bool
 }
 
 func (f *terminalStreamFilter) Reset() {
 	f.state = terminalStreamText
 	f.csi = f.csi[:0]
+	f.osc = f.osc[:0]
+	f.oscDiscard = false
+	f.titles = f.titles[:0]
 	f.bracketedPaste = false
 }
 
@@ -47,6 +62,8 @@ func (f *terminalStreamFilter) Filter(data []byte) []byte {
 		case terminalStreamEscape:
 			switch b {
 			case ']':
+				f.osc = f.osc[:0]
+				f.oscDiscard = false
 				f.state = terminalStreamOSC
 			case '[':
 				f.csi = append(f.csi[:0], terminalEscape, '[')
@@ -68,22 +85,79 @@ func (f *terminalStreamFilter) Filter(data []byte) []byte {
 		case terminalStreamOSC:
 			switch b {
 			case terminalBell:
+				f.finishOSC()
 				f.state = terminalStreamText
 			case terminalEscape:
 				f.state = terminalStreamOSCEscape
+			default:
+				f.appendOSC(b)
 			}
 		case terminalStreamOSCEscape:
 			switch b {
 			case '\\', terminalBell:
+				f.finishOSC()
 				f.state = terminalStreamText
 			case terminalEscape:
 				// Remain here so repeated ESC bytes cannot leak OSC payload.
 			default:
+				f.appendOSC(terminalEscape)
+				f.appendOSC(b)
 				f.state = terminalStreamOSC
 			}
 		}
 	}
 	return out
+}
+
+func (f *terminalStreamFilter) appendOSC(b byte) {
+	if f.oscDiscard {
+		return
+	}
+	if len(f.osc) >= maxOSCPayload {
+		f.osc = f.osc[:0]
+		f.oscDiscard = true
+		return
+	}
+	f.osc = append(f.osc, b)
+}
+
+func (f *terminalStreamFilter) finishOSC() {
+	defer func() {
+		f.osc = f.osc[:0]
+		f.oscDiscard = false
+	}()
+	if f.oscDiscard {
+		return
+	}
+	command, value, ok := bytes.Cut(f.osc, []byte{';'})
+	if !ok || (string(command) != "0" && string(command) != "2") || !utf8.Valid(value) {
+		return
+	}
+	title := strings.TrimSpace(string(value))
+	if title == "" {
+		return
+	}
+	for _, r := range title {
+		if unicode.IsControl(r) {
+			return
+		}
+	}
+	runes := []rune(title)
+	if len(runes) > maxTerminalTitleRunes {
+		title = string(runes[:maxTerminalTitleRunes])
+	}
+	if len(f.titles) == 0 || f.titles[len(f.titles)-1] != title {
+		f.titles = append(f.titles, title)
+	}
+}
+
+func (f *terminalStreamFilter) takeTitles() []string {
+	if len(f.titles) == 0 {
+		return nil
+	}
+	titles := append([]string(nil), f.titles...)
+	f.titles = f.titles[:0]
+	return titles
 }
 
 func (f *terminalStreamFilter) trackPrivateMode(sequence []byte) {

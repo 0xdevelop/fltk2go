@@ -2,6 +2,7 @@ package terminalview
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/0xdevelop/fltk2go/fltk_bridge"
@@ -32,6 +33,43 @@ func TestTerminalStreamFilterHandlesSplitEscapeTerminators(t *testing.T) {
 	}
 	if want := []byte("ab\x1b[31mred"); !bytes.Equal(got, want) {
 		t.Fatalf("filtered split stream = %q, want %q", got, want)
+	}
+}
+
+func TestTerminalTitleObserversReceiveBoundedOSCZeroAndTwoAcrossChunks(t *testing.T) {
+	terminal := NewUITerminalView(nil)
+	var titles []string
+	stop := terminal.ObserveTitleChanged(func(title string) { titles = append(titles, title) })
+
+	terminal.Feed([]byte("before\x1b]0;~/pro"))
+	terminal.Feed([]byte("ject\x07after\x1b]1;ignored\x07"))
+	terminal.Feed([]byte("\x1b]2;deploy\x1b"))
+	terminal.Feed([]byte("\\"))
+	stop()
+	stop()
+	terminal.Feed([]byte("\x1b]2;not observed\x07"))
+
+	if got := strings.TrimSuffix(terminal.Text(), "\n"); got != "beforeafter" {
+		t.Fatalf("OSC metadata leaked into rendered text: %q", got)
+	}
+	if want := []string{"~/project", "deploy"}; len(titles) != len(want) || titles[0] != want[0] || titles[1] != want[1] {
+		t.Fatalf("title notifications = %#v, want %#v", titles, want)
+	}
+}
+
+func TestTerminalTitleObserverRejectsControlsInvalidUTF8AndBoundsLongTitles(t *testing.T) {
+	terminal := NewUITerminalView(nil)
+	var titles []string
+	terminal.ObserveTitleChanged(func(title string) { titles = append(titles, title) })
+	terminal.Feed([]byte("\x1b]2;safe\x00spoof\x07"))
+	terminal.Feed([]byte{'\x1b', ']', '2', ';', 0xff, '\x07'})
+	terminal.Feed([]byte("\x1b]2;" + string(bytes.Repeat([]byte("界"), 180)) + "\x07"))
+
+	if len(titles) != 1 {
+		t.Fatalf("accepted title count = %d, want only bounded valid title: %#v", len(titles), titles)
+	}
+	if got := []rune(titles[0]); len(got) != 128 {
+		t.Fatalf("bounded title length = %d runes, want 128", len(got))
 	}
 }
 

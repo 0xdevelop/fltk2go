@@ -226,17 +226,18 @@ func scrollActionForKey(event KeyEvent) terminalScrollAction {
 // terminal parsing, scrollback, selection, focus, and key-sequence translation;
 // it intentionally does not own a process or network connection.
 type UITerminalView struct {
-	v             view.UIView
-	raw           *fltk_bridge.Terminal
-	onInput       func([]byte)
-	onResize      func(Size)
-	lastSize      Size
-	inputBound    bool
-	shortcuts     []terminalShortcut
-	onContextMenu func(ContextMenuState)
-	textObservers map[uint64]func()
-	nextObserver  uint64
-	stream        terminalStreamFilter
+	v              view.UIView
+	raw            *fltk_bridge.Terminal
+	onInput        func([]byte)
+	onResize       func(Size)
+	lastSize       Size
+	inputBound     bool
+	shortcuts      []terminalShortcut
+	onContextMenu  func(ContextMenuState)
+	textObservers  map[uint64]func()
+	titleObservers map[uint64]func(string)
+	nextObserver   uint64
+	stream         terminalStreamFilter
 }
 
 type terminalShortcut struct {
@@ -289,11 +290,44 @@ func (t *UITerminalView) Raw() *fltk_bridge.Terminal {
 func (t *UITerminalView) Feed(data []byte) {
 	if t != nil && t.raw != nil {
 		filtered := t.stream.Filter(data)
+		for _, title := range t.stream.takeTitles() {
+			t.notifyTitleChanged(title)
+		}
 		if len(filtered) == 0 {
 			return
 		}
 		t.raw.AppendBytes(filtered)
 		t.notifyTextChanged()
+	}
+}
+
+// ObserveTitleChanged receives valid OSC 0/2 terminal-title metadata while the
+// control sequence itself remains hidden from rendered output. Titles are
+// UTF-8, control-free, and bounded before delivery. The returned unsubscribe
+// function is idempotent.
+func (t *UITerminalView) ObserveTitleChanged(handler func(string)) func() {
+	if t == nil || handler == nil {
+		return func() {}
+	}
+	if t.titleObservers == nil {
+		t.titleObservers = make(map[uint64]func(string))
+	}
+	t.nextObserver++
+	id := t.nextObserver
+	t.titleObservers[id] = handler
+	return func() { delete(t.titleObservers, id) }
+}
+
+func (t *UITerminalView) notifyTitleChanged(title string) {
+	if t == nil || len(t.titleObservers) == 0 {
+		return
+	}
+	observers := make([]func(string), 0, len(t.titleObservers))
+	for _, observer := range t.titleObservers {
+		observers = append(observers, observer)
+	}
+	for _, observer := range observers {
+		observer(title)
 	}
 }
 
