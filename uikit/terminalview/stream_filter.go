@@ -2,17 +2,27 @@ package terminalview
 
 import (
 	"bytes"
+	"net/url"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
 
 const (
-	terminalEscape        byte = 0x1b
-	terminalBell          byte = 0x07
-	maxOSCPayload              = 4096
-	maxTerminalTitleRunes      = 128
+	terminalEscape           byte = 0x1b
+	terminalBell             byte = 0x07
+	maxOSCPayload                 = 4096
+	maxTerminalTitleRunes         = 128
+	maxWorkingDirectoryRunes      = 1024
 )
+
+// WorkingDirectory is the validated, decoded file URI carried by OSC 7.
+// Host remains separate from Path so applications can distinguish local and
+// remote terminal metadata before using the path for a new process or session.
+type WorkingDirectory struct {
+	Host string
+	Path string
+}
 
 type terminalStreamState uint8
 
@@ -34,6 +44,7 @@ type terminalStreamFilter struct {
 	osc            []byte
 	oscDiscard     bool
 	titles         []string
+	directories    []WorkingDirectory
 	bells          int
 	bracketedPaste bool
 }
@@ -44,6 +55,7 @@ func (f *terminalStreamFilter) Reset() {
 	f.osc = f.osc[:0]
 	f.oscDiscard = false
 	f.titles = f.titles[:0]
+	f.directories = f.directories[:0]
 	f.bells = 0
 	f.bracketedPaste = false
 }
@@ -135,7 +147,17 @@ func (f *terminalStreamFilter) finishOSC() {
 		return
 	}
 	command, value, ok := bytes.Cut(f.osc, []byte{';'})
-	if !ok || (string(command) != "0" && string(command) != "2") || !utf8.Valid(value) {
+	if !ok || !utf8.Valid(value) {
+		return
+	}
+	if string(command) == "7" {
+		if directory, ok := parseWorkingDirectory(value); ok &&
+			(len(f.directories) == 0 || f.directories[len(f.directories)-1] != directory) {
+			f.directories = append(f.directories, directory)
+		}
+		return
+	}
+	if string(command) != "0" && string(command) != "2" {
 		return
 	}
 	title := strings.TrimSpace(string(value))
@@ -156,6 +178,28 @@ func (f *terminalStreamFilter) finishOSC() {
 	}
 }
 
+func parseWorkingDirectory(value []byte) (WorkingDirectory, bool) {
+	parsed, err := url.Parse(string(value))
+	if err != nil || parsed.Scheme != "file" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Opaque != "" {
+		return WorkingDirectory{}, false
+	}
+	path := parsed.Path
+	if path == "" || !strings.HasPrefix(path, "/") || utf8.RuneCountInString(path) > maxWorkingDirectoryRunes {
+		return WorkingDirectory{}, false
+	}
+	for _, segment := range strings.Split(path, "/") {
+		if segment == "." || segment == ".." {
+			return WorkingDirectory{}, false
+		}
+	}
+	for _, r := range parsed.Host + path {
+		if unicode.IsControl(r) {
+			return WorkingDirectory{}, false
+		}
+	}
+	return WorkingDirectory{Host: parsed.Hostname(), Path: path}, true
+}
+
 func (f *terminalStreamFilter) takeTitles() []string {
 	if len(f.titles) == 0 {
 		return nil
@@ -163,6 +207,15 @@ func (f *terminalStreamFilter) takeTitles() []string {
 	titles := append([]string(nil), f.titles...)
 	f.titles = f.titles[:0]
 	return titles
+}
+
+func (f *terminalStreamFilter) takeDirectories() []WorkingDirectory {
+	if len(f.directories) == 0 {
+		return nil
+	}
+	directories := append([]WorkingDirectory(nil), f.directories...)
+	f.directories = f.directories[:0]
+	return directories
 }
 
 func (f *terminalStreamFilter) takeBells() int {

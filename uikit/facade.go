@@ -64,6 +64,7 @@ type ContextMenuState = terminalview.ContextMenuState
 type TerminalSize = terminalview.Size
 type TerminalTextMatch = terminalview.TextMatch
 type TerminalTextSearchOptions = terminalview.TextSearchOptions
+type TerminalWorkingDirectory = terminalview.WorkingDirectory
 
 const (
 	SystemButton   = button.SystemButton

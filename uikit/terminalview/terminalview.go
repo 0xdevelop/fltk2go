@@ -226,19 +226,20 @@ func scrollActionForKey(event KeyEvent) terminalScrollAction {
 // terminal parsing, scrollback, selection, focus, and key-sequence translation;
 // it intentionally does not own a process or network connection.
 type UITerminalView struct {
-	v              view.UIView
-	raw            *fltk_bridge.Terminal
-	onInput        func([]byte)
-	onResize       func(Size)
-	lastSize       Size
-	inputBound     bool
-	shortcuts      []terminalShortcut
-	onContextMenu  func(ContextMenuState)
-	textObservers  map[uint64]func()
-	titleObservers map[uint64]func(string)
-	bellObservers  map[uint64]func()
-	nextObserver   uint64
-	stream         terminalStreamFilter
+	v                  view.UIView
+	raw                *fltk_bridge.Terminal
+	onInput            func([]byte)
+	onResize           func(Size)
+	lastSize           Size
+	inputBound         bool
+	shortcuts          []terminalShortcut
+	onContextMenu      func(ContextMenuState)
+	textObservers      map[uint64]func()
+	titleObservers     map[uint64]func(string)
+	directoryObservers map[uint64]func(WorkingDirectory)
+	bellObservers      map[uint64]func()
+	nextObserver       uint64
+	stream             terminalStreamFilter
 }
 
 type terminalShortcut struct {
@@ -294,6 +295,9 @@ func (t *UITerminalView) Feed(data []byte) {
 		for _, title := range t.stream.takeTitles() {
 			t.notifyTitleChanged(title)
 		}
+		for _, directory := range t.stream.takeDirectories() {
+			t.notifyWorkingDirectoryChanged(directory)
+		}
 		for range t.stream.takeBells() {
 			t.notifyBell()
 		}
@@ -332,6 +336,36 @@ func (t *UITerminalView) notifyTitleChanged(title string) {
 	}
 	for _, observer := range observers {
 		observer(title)
+	}
+}
+
+// ObserveWorkingDirectoryChanged receives valid OSC 7 file URIs as decoded,
+// absolute paths with the URI host kept separate. Applications must still
+// decide whether that host belongs to their local or remote transport before
+// using the path. The returned unsubscribe function is idempotent.
+func (t *UITerminalView) ObserveWorkingDirectoryChanged(handler func(WorkingDirectory)) func() {
+	if t == nil || handler == nil {
+		return func() {}
+	}
+	if t.directoryObservers == nil {
+		t.directoryObservers = make(map[uint64]func(WorkingDirectory))
+	}
+	t.nextObserver++
+	id := t.nextObserver
+	t.directoryObservers[id] = handler
+	return func() { delete(t.directoryObservers, id) }
+}
+
+func (t *UITerminalView) notifyWorkingDirectoryChanged(directory WorkingDirectory) {
+	if t == nil || len(t.directoryObservers) == 0 {
+		return
+	}
+	observers := make([]func(WorkingDirectory), 0, len(t.directoryObservers))
+	for _, observer := range t.directoryObservers {
+		observers = append(observers, observer)
+	}
+	for _, observer := range observers {
+		observer(directory)
 	}
 }
 

@@ -73,6 +73,54 @@ func TestTerminalTitleObserverRejectsControlsInvalidUTF8AndBoundsLongTitles(t *t
 	}
 }
 
+func TestTerminalWorkingDirectoryObserversReceiveDecodedOSCSevenAcrossChunks(t *testing.T) {
+	terminal := NewUITerminalView(nil)
+	var directories []WorkingDirectory
+	stop := terminal.ObserveWorkingDirectoryChanged(func(directory WorkingDirectory) {
+		directories = append(directories, directory)
+	})
+
+	terminal.Feed([]byte("before\x1b]7;file://workstation/home/user/My%20Pro"))
+	terminal.Feed([]byte("ject\x07after"))
+	terminal.Feed([]byte("\x1b]7;file:///tmp/%E7%BB%88%E7%AB%AF\x1b"))
+	terminal.Feed([]byte("\\"))
+	stop()
+	stop()
+	terminal.Feed([]byte("\x1b]7;file:///not-observed\x07"))
+
+	if got := strings.TrimSuffix(terminal.Text(), "\n"); got != "beforeafter" {
+		t.Fatalf("OSC 7 metadata leaked into rendered text: %q", got)
+	}
+	want := []WorkingDirectory{
+		{Host: "workstation", Path: "/home/user/My Project"},
+		{Path: "/tmp/终端"},
+	}
+	if len(directories) != len(want) || directories[0] != want[0] || directories[1] != want[1] {
+		t.Fatalf("working-directory notifications = %#v, want %#v", directories, want)
+	}
+}
+
+func TestTerminalWorkingDirectoryObserverRejectsUnsafeOSCSevenValues(t *testing.T) {
+	terminal := NewUITerminalView(nil)
+	var directories []WorkingDirectory
+	terminal.ObserveWorkingDirectoryChanged(func(directory WorkingDirectory) {
+		directories = append(directories, directory)
+	})
+
+	for _, sequence := range []string{
+		"\x1b]7;https://example.com/tmp\x07",
+		"\x1b]7;file://host/relative/../tmp\x07",
+		"\x1b]7;file:///tmp/%00spoof\x07",
+		"\x1b]7;file:///tmp/%ZZ\x07",
+		"\x1b]7;file:///" + strings.Repeat("a", 4096) + "\x07",
+	} {
+		terminal.Feed([]byte(sequence))
+	}
+	if len(directories) != 0 {
+		t.Fatalf("unsafe OSC 7 values were accepted: %#v", directories)
+	}
+}
+
 func TestTerminalBellObserversReceiveOnlyDisplayBells(t *testing.T) {
 	terminal := NewUITerminalView(nil)
 	bells := 0
