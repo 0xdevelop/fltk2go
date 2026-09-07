@@ -73,6 +73,23 @@ func TestTerminalTitleObserverRejectsControlsInvalidUTF8AndBoundsLongTitles(t *t
 	}
 }
 
+func TestTerminalBellObserversReceiveOnlyDisplayBells(t *testing.T) {
+	terminal := NewUITerminalView(nil)
+	bells := 0
+	stop := terminal.ObserveBell(func() { bells++ })
+
+	terminal.Feed([]byte("before\x07after\x1b]2;title\x07"))
+	terminal.Feed([]byte("\x1b]2;split\x1b"))
+	terminal.Feed([]byte("\\\x07"))
+	stop()
+	stop()
+	terminal.Feed([]byte("\x07"))
+
+	if bells != 2 {
+		t.Fatalf("bell notifications = %d, want 2 display bells", bells)
+	}
+}
+
 func TestTerminalStreamFilterTracksBracketedPasteModeAcrossChunks(t *testing.T) {
 	filter := terminalStreamFilter{}
 	var got []byte

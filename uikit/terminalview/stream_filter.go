@@ -34,6 +34,7 @@ type terminalStreamFilter struct {
 	osc            []byte
 	oscDiscard     bool
 	titles         []string
+	bells          int
 	bracketedPaste bool
 }
 
@@ -43,6 +44,7 @@ func (f *terminalStreamFilter) Reset() {
 	f.osc = f.osc[:0]
 	f.oscDiscard = false
 	f.titles = f.titles[:0]
+	f.bells = 0
 	f.bracketedPaste = false
 }
 
@@ -54,7 +56,10 @@ func (f *terminalStreamFilter) Filter(data []byte) []byte {
 	for _, b := range data {
 		switch f.state {
 		case terminalStreamText:
-			if b == terminalEscape {
+			if b == terminalBell {
+				f.bells++
+				out = append(out, b)
+			} else if b == terminalEscape {
 				f.state = terminalStreamEscape
 			} else {
 				out = append(out, b)
@@ -158,6 +163,12 @@ func (f *terminalStreamFilter) takeTitles() []string {
 	titles := append([]string(nil), f.titles...)
 	f.titles = f.titles[:0]
 	return titles
+}
+
+func (f *terminalStreamFilter) takeBells() int {
+	bells := f.bells
+	f.bells = 0
+	return bells
 }
 
 func (f *terminalStreamFilter) trackPrivateMode(sequence []byte) {

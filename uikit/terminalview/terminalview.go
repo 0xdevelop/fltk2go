@@ -236,6 +236,7 @@ type UITerminalView struct {
 	onContextMenu  func(ContextMenuState)
 	textObservers  map[uint64]func()
 	titleObservers map[uint64]func(string)
+	bellObservers  map[uint64]func()
 	nextObserver   uint64
 	stream         terminalStreamFilter
 }
@@ -293,6 +294,9 @@ func (t *UITerminalView) Feed(data []byte) {
 		for _, title := range t.stream.takeTitles() {
 			t.notifyTitleChanged(title)
 		}
+		for range t.stream.takeBells() {
+			t.notifyBell()
+		}
 		if len(filtered) == 0 {
 			return
 		}
@@ -328,6 +332,36 @@ func (t *UITerminalView) notifyTitleChanged(title string) {
 	}
 	for _, observer := range observers {
 		observer(title)
+	}
+}
+
+// ObserveBell receives display BEL events without conflating the BEL byte used
+// to terminate an OSC metadata sequence. Applications can use this to surface
+// attention on a session tab while the terminal retains native bell handling.
+// The returned unsubscribe function is idempotent.
+func (t *UITerminalView) ObserveBell(handler func()) func() {
+	if t == nil || handler == nil {
+		return func() {}
+	}
+	if t.bellObservers == nil {
+		t.bellObservers = make(map[uint64]func())
+	}
+	t.nextObserver++
+	id := t.nextObserver
+	t.bellObservers[id] = handler
+	return func() { delete(t.bellObservers, id) }
+}
+
+func (t *UITerminalView) notifyBell() {
+	if t == nil || len(t.bellObservers) == 0 {
+		return
+	}
+	observers := make([]func(), 0, len(t.bellObservers))
+	for _, observer := range t.bellObservers {
+		observers = append(observers, observer)
+	}
+	for _, observer := range observers {
+		observer()
 	}
 }
 
