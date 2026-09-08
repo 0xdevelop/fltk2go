@@ -44,6 +44,7 @@ type TreeDataSource = treeview.TreeDataSource
 type UIMenuBar = menubar.UIMenuBar
 type UIContextMenu = menubar.UIContextMenu
 type MenuItem = menubar.MenuItem
+type TabContextMenuState = tabview.TabContextMenuState
 type UITextField = textfield.UITextField
 type UISlider = slider.UISlider
 type UIProgressView = progress.UIProgressView

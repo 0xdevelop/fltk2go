@@ -30,6 +30,16 @@ type Style struct {
 	FontSize          int
 }
 
+// TabContextMenuState identifies the tab that received a native right-click.
+// ID remains stable across reordering while Index reflects the current strip
+// position at request time. The owner decides which menu and actions apply.
+type TabContextMenuState struct {
+	ID       string
+	Title    string
+	Index    int
+	Selected bool
+}
+
 // UITabView is a native segmented tab container with explicit dynamic-tab
 // lifecycle, stable identity and semantic automation support.
 type UITabView struct {
@@ -46,6 +56,7 @@ type UITabView struct {
 
 	onTabChanged        func(index int)
 	onTabCloseRequested func(index int)
+	onTabContextMenu    func(state TabContextMenuState)
 	tabsClosable        bool
 }
 
@@ -202,6 +213,12 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		if index := tv.indexOfItem(item); index >= 0 {
 			tv.SelectTab(index)
 		}
+	})
+	btn.View().On(fltk_bridge.PUSH, func(fltk_bridge.Event) bool {
+		if fltk_bridge.EventButton() != fltk_bridge.RightMouse {
+			return false
+		}
+		return tv.requestTabContextMenuItem(item)
 	})
 	tv.tabBar.Add(btn.Raw())
 	tv.v.AddAutomationChild(btn)
@@ -536,4 +553,36 @@ func (tv *UITabView) OnTabCloseRequested(cb func(index int)) {
 	if tv != nil {
 		tv.onTabCloseRequested = cb
 	}
+}
+
+// OnTabContextMenuRequested installs an owner callback for native right-clicks
+// on tab labels. The component reports identity and selection state but does not
+// select the tab or construct an application-specific menu.
+func (tv *UITabView) OnTabContextMenuRequested(cb func(state TabContextMenuState)) {
+	if tv != nil {
+		tv.onTabContextMenu = cb
+	}
+}
+
+// RequestTabContextMenu dispatches the same owner request used by native
+// right-click handling. It is also suitable for semantic GUI automation.
+func (tv *UITabView) RequestTabContextMenu(index int) bool {
+	if tv == nil || tv.onTabContextMenu == nil || index < 0 || index >= len(tv.tabs) {
+		return false
+	}
+	item := tv.tabs[index]
+	tv.onTabContextMenu(TabContextMenuState{
+		ID:       item.id,
+		Title:    item.title,
+		Index:    index,
+		Selected: index == tv.activeIndex,
+	})
+	return true
+}
+
+func (tv *UITabView) requestTabContextMenuItem(item *tabItem) bool {
+	if tv == nil || item == nil {
+		return false
+	}
+	return tv.RequestTabContextMenu(tv.indexOfItem(item))
 }

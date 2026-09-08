@@ -272,3 +272,44 @@ func TestUITabViewCloseAffordanceVisibilityAndLifecycle(t *testing.T) {
 		t.Fatal("removed close affordance remained in automation registry")
 	}
 }
+
+func TestUITabViewContextMenuRequestUsesCurrentStableIdentity(t *testing.T) {
+	tv := tabview.NewUITabView(nil)
+	tv.AddTabWithID("one", "One", nil)
+	tv.AddTabWithID("two", "Two", nil)
+	tv.AddTabWithID("three", "Three", nil)
+	tv.SelectTab(1)
+
+	var requested []tabview.TabContextMenuState
+	tv.OnTabContextMenuRequested(func(state tabview.TabContextMenuState) {
+		requested = append(requested, state)
+	})
+	if !tv.RequestTabContextMenu(2) {
+		t.Fatal("valid tab context-menu request was rejected")
+	}
+	if len(requested) != 1 || requested[0].ID != "three" || requested[0].Title != "Three" || requested[0].Index != 2 || requested[0].Selected {
+		t.Fatalf("unexpected context-menu state: %#v", requested)
+	}
+
+	if !tv.MoveTab(2, 0) || !tv.RequestTabContextMenu(0) {
+		t.Fatal("moved tab context-menu request failed")
+	}
+	if got := requested[1]; got.ID != "three" || got.Index != 0 || got.Selected {
+		t.Fatalf("context-menu identity was stale after reorder: %#v", got)
+	}
+	if tv.RequestTabContextMenu(-1) || tv.RequestTabContextMenu(3) {
+		t.Fatal("invalid tab context-menu request was accepted")
+	}
+}
+
+func TestUITabViewContextMenuRequiresOwnerHandler(t *testing.T) {
+	var nilTabs *tabview.UITabView
+	if nilTabs.RequestTabContextMenu(0) {
+		t.Fatal("nil tab view accepted a context-menu request")
+	}
+	tv := tabview.NewUITabView(nil)
+	tv.AddTabWithID("one", "One", nil)
+	if tv.RequestTabContextMenu(0) {
+		t.Fatal("context-menu request without an owner handler was consumed")
+	}
+}
