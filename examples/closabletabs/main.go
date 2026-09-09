@@ -19,7 +19,7 @@ func main() {
 	title.SetFontSize(22)
 	root.AddSubview(title)
 
-	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 392, Height: 28}, "Select a tab, then reorder or close it.")
+	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 240, Height: 28}, "Select, protect, move, or close.")
 	status.SetFrame(fltk_bridge.FLAT_BOX)
 	status.SetBackgroundColor(uint(fltk_bridge.BACKGROUND_COLOR))
 	status.View().SetAutomationID("closable-tabs.status")
@@ -42,6 +42,24 @@ func main() {
 		}
 	})
 	root.AddSubview(tabs)
+
+	protect := uikit.NewUIButton(&foundation.Rect{X: 288, Y: 64, Width: 136, Height: 32}, "Protect tab")
+	protect.View().SetAutomationID("closable-tabs.protect")
+	protect.OnTouchUpInside(func() {
+		index := tabs.ActiveIndex()
+		if index < 0 {
+			return
+		}
+		closable := !tabs.TabClosable(index)
+		if tabs.SetTabClosable(index, closable) {
+			verb := "Protected"
+			if closable {
+				verb = "Unprotected"
+			}
+			status.SetText(fmt.Sprintf("%s %s", verb, tabs.TabID(index)))
+		}
+	})
+	root.AddSubview(protect)
 
 	moveLeft := uikit.NewUIButton(&foundation.Rect{X: 440, Y: 64, Width: 136, Height: 32}, "Move left")
 	moveLeft.View().SetAutomationID("closable-tabs.move-left")

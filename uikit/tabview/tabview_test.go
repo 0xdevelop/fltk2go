@@ -273,6 +273,39 @@ func TestUITabViewCloseAffordanceVisibilityAndLifecycle(t *testing.T) {
 	}
 }
 
+func TestUITabViewPerTabClosableStateSurvivesReorder(t *testing.T) {
+	tv := tabview.NewUITabView(nil)
+	tv.SetAutomationID("sessions")
+	tv.AddTabWithID("protected", "Protected", nil)
+	tv.AddTabWithID("ordinary", "Ordinary", nil)
+	tv.SetTabsClosable(true)
+
+	if !tv.SetTabClosable(0, false) || tv.TabClosable(0) {
+		t.Fatal("failed to disable the protected tab close affordance")
+	}
+	if err := view.AutomationClick("sessions.tab.protected.close"); err != view.ErrAutomationNodeUnavailable {
+		t.Fatalf("protected close action error = %v, want unavailable", err)
+	}
+
+	var requested []string
+	tv.OnTabCloseRequested(func(index int) { requested = append(requested, tv.TabID(index)) })
+	if err := view.AutomationClick("sessions.tab.ordinary.close"); err != nil {
+		t.Fatalf("ordinary close action failed: %v", err)
+	}
+	if !tv.MoveTab(0, 1) || tv.TabClosable(1) {
+		t.Fatal("per-tab close policy did not follow stable identity across reorder")
+	}
+	if err := view.AutomationClick("sessions.tab.protected.close"); err != view.ErrAutomationNodeUnavailable {
+		t.Fatalf("moved protected close action error = %v, want unavailable", err)
+	}
+	if len(requested) != 1 || requested[0] != "ordinary" {
+		t.Fatalf("close requests = %#v, want only ordinary", requested)
+	}
+	if !tv.SetTabClosable(1, true) || !tv.TabClosable(1) {
+		t.Fatal("failed to restore moved tab close affordance")
+	}
+}
+
 func TestUITabViewContextMenuRequestUsesCurrentStableIdentity(t *testing.T) {
 	tv := tabview.NewUITabView(nil)
 	tv.AddTabWithID("one", "One", nil)

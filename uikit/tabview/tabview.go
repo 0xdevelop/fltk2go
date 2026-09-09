@@ -66,6 +66,7 @@ type tabItem struct {
 	btn      *button.UIButton
 	closeBtn *button.UIButton
 	content  view.Viewable
+	closable bool
 }
 
 func defaultStyle() Style {
@@ -202,7 +203,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		tv.SelectTab(existing)
 		return existing
 	}
-	item := &tabItem{id: id, title: title, content: content}
+	item := &tabItem{id: id, title: title, content: content, closable: true}
 	btn := button.NewUIButton(&foundation.Rect{Width: 100, Height: defaultTabBarHeight}, title)
 	item.btn = btn
 	btn.Raw().SetBox(fltk_bridge.FLAT_BOX)
@@ -230,7 +231,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 	closeBtn.Raw().SetTooltip("Close " + title)
 	closeBtn.Raw().Hide()
 	closeBtn.OnTouchUpInside(func() {
-		if index := tv.indexOfItem(item); index >= 0 && tv.onTabCloseRequested != nil {
+		if index := tv.indexOfItem(item); index >= 0 && tv.tabClosableItem(item) && tv.onTabCloseRequested != nil {
 			tv.onTabCloseRequested(index)
 		}
 	})
@@ -410,7 +411,7 @@ func (tv *UITabView) relayoutTabs() {
 			width = tv.tabBar.X() + tv.tabBar.W() - x
 		}
 		labelWidth := width
-		if tv.tabsClosable {
+		if tv.tabClosableItem(item) {
 			closeWidth := closeButtonWidth
 			if closeWidth > width/2 {
 				closeWidth = width / 2
@@ -518,7 +519,7 @@ func (tv *UITabView) updateAutomation() {
 		if tv.automationID != "" {
 			id = tv.automationID + ".tab." + item.id
 		}
-		item.btn.View().SetAutomationID(id).SetAutomationName(item.title).SetAutomationProperty("index", fmt.Sprintf("%d", i))
+		item.btn.View().SetAutomationID(id).SetAutomationName(item.title).SetAutomationProperty("index", fmt.Sprintf("%d", i)).SetAutomationProperty("closable", fmt.Sprintf("%t", tv.tabClosableItem(item)))
 		closeID := ""
 		if id != "" {
 			closeID = id + ".close"
@@ -544,6 +545,35 @@ func (tv *UITabView) SetTabsClosable(closable bool) {
 	tv.tabsClosable = closable
 	tv.relayoutTabs()
 	tv.raw.Redraw()
+}
+
+// SetTabClosable applies an owner policy to one tab without changing the
+// tab-list-wide close mode. The policy is owned by the stable tab item, so it
+// follows that item across reordering. This is useful for pinned, protected, or
+// otherwise non-dismissible tabs while their peers remain closable.
+func (tv *UITabView) SetTabClosable(index int, closable bool) bool {
+	if tv == nil || index < 0 || index >= len(tv.tabs) {
+		return false
+	}
+	item := tv.tabs[index]
+	if item.closable == closable {
+		return true
+	}
+	item.closable = closable
+	tv.relayoutTabs()
+	tv.updateAutomation()
+	tv.raw.Redraw()
+	return true
+}
+
+// TabClosable reports the per-tab owner policy. Global SetTabsClosable(false)
+// can still hide every close affordance without discarding these policies.
+func (tv *UITabView) TabClosable(index int) bool {
+	return tv != nil && index >= 0 && index < len(tv.tabs) && tv.tabs[index].closable
+}
+
+func (tv *UITabView) tabClosableItem(item *tabItem) bool {
+	return tv != nil && tv.tabsClosable && item != nil && item.closable
 }
 
 // OnTabCloseRequested receives the tab's current index when its close
