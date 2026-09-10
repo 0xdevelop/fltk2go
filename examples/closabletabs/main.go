@@ -19,7 +19,7 @@ func main() {
 	title.SetFontSize(22)
 	root.AddSubview(title)
 
-	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 240, Height: 28}, "Select, protect, move, or close.")
+	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 240, Height: 28}, "Select, pin, move, or close.")
 	status.SetFrame(fltk_bridge.FLAT_BOX)
 	status.SetBackgroundColor(uint(fltk_bridge.BACKGROUND_COLOR))
 	status.View().SetAutomationID("closable-tabs.status")
@@ -43,23 +43,24 @@ func main() {
 	})
 	root.AddSubview(tabs)
 
-	protect := uikit.NewUIButton(&foundation.Rect{X: 288, Y: 64, Width: 136, Height: 32}, "Protect tab")
-	protect.View().SetAutomationID("closable-tabs.protect")
-	protect.OnTouchUpInside(func() {
+	pin := uikit.NewUIButton(&foundation.Rect{X: 288, Y: 64, Width: 136, Height: 32}, "Pin tab")
+	pin.View().SetAutomationID("closable-tabs.pin")
+	pin.OnTouchUpInside(func() {
 		index := tabs.ActiveIndex()
 		if index < 0 {
 			return
 		}
-		closable := !tabs.TabClosable(index)
-		if tabs.SetTabClosable(index, closable) {
-			verb := "Protected"
-			if closable {
-				verb = "Unprotected"
+		id := tabs.TabID(index)
+		pinned := !tabs.TabPinned(index)
+		if _, ok := tabs.SetTabPinned(index, pinned); ok {
+			verb := "Pinned"
+			if !pinned {
+				verb = "Unpinned"
 			}
-			status.SetText(fmt.Sprintf("%s %s", verb, tabs.TabID(index)))
+			status.SetText(fmt.Sprintf("%s %s", verb, id))
 		}
 	})
-	root.AddSubview(protect)
+	root.AddSubview(pin)
 
 	moveLeft := uikit.NewUIButton(&foundation.Rect{X: 440, Y: 64, Width: 136, Height: 32}, "Move left")
 	moveLeft.View().SetAutomationID("closable-tabs.move-left")

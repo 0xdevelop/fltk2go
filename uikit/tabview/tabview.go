@@ -38,6 +38,7 @@ type TabContextMenuState struct {
 	Title    string
 	Index    int
 	Selected bool
+	Pinned   bool
 }
 
 // UITabView is a native segmented tab container with explicit dynamic-tab
@@ -67,6 +68,7 @@ type tabItem struct {
 	closeBtn *button.UIButton
 	content  view.Viewable
 	closable bool
+	pinned   bool
 }
 
 func defaultStyle() Style {
@@ -318,6 +320,14 @@ func (tv *UITabView) MoveTab(from, to int) bool {
 	if tv == nil || from < 0 || from >= len(tv.tabs) || to < 0 || to >= len(tv.tabs) || from == to {
 		return false
 	}
+	if tv.tabs[from].pinned != tv.tabs[to].pinned {
+		return false
+	}
+	tv.moveTabUnchecked(from, to)
+	return true
+}
+
+func (tv *UITabView) moveTabUnchecked(from, to int) {
 	active := (*tabItem)(nil)
 	if tv.activeIndex >= 0 && tv.activeIndex < len(tv.tabs) {
 		active = tv.tabs[tv.activeIndex]
@@ -335,7 +345,6 @@ func (tv *UITabView) MoveTab(from, to int) bool {
 	tv.relayoutTabs()
 	tv.updateAutomation()
 	tv.raw.Redraw()
-	return true
 }
 
 func (tv *UITabView) SetTabTitle(index int, title string) bool {
@@ -519,7 +528,7 @@ func (tv *UITabView) updateAutomation() {
 		if tv.automationID != "" {
 			id = tv.automationID + ".tab." + item.id
 		}
-		item.btn.View().SetAutomationID(id).SetAutomationName(item.title).SetAutomationProperty("index", fmt.Sprintf("%d", i)).SetAutomationProperty("closable", fmt.Sprintf("%t", tv.tabClosableItem(item)))
+		item.btn.View().SetAutomationID(id).SetAutomationName(item.title).SetAutomationProperty("index", fmt.Sprintf("%d", i)).SetAutomationProperty("closable", fmt.Sprintf("%t", tv.tabClosableItem(item))).SetAutomationProperty("pinned", fmt.Sprintf("%t", item.pinned))
 		closeID := ""
 		if id != "" {
 			closeID = id + ".close"
@@ -573,7 +582,61 @@ func (tv *UITabView) TabClosable(index int) bool {
 }
 
 func (tv *UITabView) tabClosableItem(item *tabItem) bool {
-	return tv != nil && tv.tabsClosable && item != nil && item.closable
+	return tv != nil && tv.tabsClosable && item != nil && item.closable && !item.pinned
+}
+
+// SetTabPinned moves a tab into or out of the contiguous leading pinned
+// partition. The returned index is the tab's new position. Stable identity,
+// selection, content, callbacks, and per-tab close policy move with the item.
+// Pinned tabs never expose the native close affordance, while unpinning restores
+// the owner's existing per-tab close policy.
+func (tv *UITabView) SetTabPinned(index int, pinned bool) (int, bool) {
+	if tv == nil || index < 0 || index >= len(tv.tabs) {
+		return -1, false
+	}
+	item := tv.tabs[index]
+	if item.pinned == pinned {
+		return index, true
+	}
+	item.pinned = pinned
+	target := 0
+	for _, candidate := range tv.tabs {
+		if candidate.pinned {
+			target++
+		}
+	}
+	if pinned {
+		target--
+	}
+	if target != index {
+		tv.moveTabUnchecked(index, target)
+	} else {
+		tv.relayoutTabs()
+		tv.updateAutomation()
+		tv.raw.Redraw()
+	}
+	return tv.indexOfItem(item), true
+}
+
+// TabPinned reports whether the stable tab item at index belongs to the pinned
+// partition.
+func (tv *UITabView) TabPinned(index int) bool {
+	return tv != nil && index >= 0 && index < len(tv.tabs) && tv.tabs[index].pinned
+}
+
+// PinnedCount returns the size of the contiguous leading pinned partition.
+func (tv *UITabView) PinnedCount() int {
+	if tv == nil {
+		return 0
+	}
+	count := 0
+	for _, item := range tv.tabs {
+		if !item.pinned {
+			break
+		}
+		count++
+	}
+	return count
 }
 
 // OnTabCloseRequested receives the tab's current index when its close
@@ -606,6 +669,7 @@ func (tv *UITabView) RequestTabContextMenu(index int) bool {
 		Title:    item.title,
 		Index:    index,
 		Selected: index == tv.activeIndex,
+		Pinned:   item.pinned,
 	})
 	return true
 }

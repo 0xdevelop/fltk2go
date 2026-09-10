@@ -1,6 +1,7 @@
 package tabview_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/0xdevelop/fltk2go/fltk_bridge"
@@ -303,6 +304,60 @@ func TestUITabViewPerTabClosableStateSurvivesReorder(t *testing.T) {
 	}
 	if !tv.SetTabClosable(1, true) || !tv.TabClosable(1) {
 		t.Fatal("failed to restore moved tab close affordance")
+	}
+}
+
+func TestUITabViewPinnedTabsFormLeadingPartition(t *testing.T) {
+	tv := tabview.NewUITabView(nil)
+	tv.SetAutomationID("sessions")
+	for _, id := range []string{"one", "two", "three", "four"} {
+		tv.AddTabWithID(id, id, nil)
+	}
+	tv.SelectTab(0)
+
+	index, ok := tv.SetTabPinned(2, true)
+	if !ok || index != 0 {
+		t.Fatalf("pin three = index %d, ok %t; want 0, true", index, ok)
+	}
+	index, ok = tv.SetTabPinned(2, true)
+	if !ok || index != 1 {
+		t.Fatalf("pin two = index %d, ok %t; want 1, true", index, ok)
+	}
+	if got := []string{tv.TabID(0), tv.TabID(1), tv.TabID(2), tv.TabID(3)}; strings.Join(got, ",") != "three,two,one,four" {
+		t.Fatalf("pinned order = %v", got)
+	}
+	if tv.PinnedCount() != 2 || !tv.TabPinned(0) || !tv.TabPinned(1) || tv.TabPinned(2) {
+		t.Fatalf("invalid pinned partition: count=%d", tv.PinnedCount())
+	}
+	if tv.TabID(tv.ActiveIndex()) != "one" {
+		t.Fatalf("active identity drifted after pinning: %q", tv.TabID(tv.ActiveIndex()))
+	}
+	if node, ok := view.AutomationLookup("sessions.tab.three"); !ok || node.AutomationSnapshot().Properties["pinned"] != "true" {
+		t.Fatalf("pinned semantic state missing: ok=%t node=%#v", ok, node)
+	}
+
+	index, ok = tv.SetTabPinned(0, false)
+	if !ok || index != 1 || tv.TabID(1) != "three" || tv.TabPinned(1) {
+		t.Fatalf("unpin did not move to ordinary boundary: index=%d ok=%t", index, ok)
+	}
+}
+
+func TestUITabViewMoveTabRejectsPinnedPartitionCrossing(t *testing.T) {
+	tv := tabview.NewUITabView(nil)
+	for _, id := range []string{"pinned", "ordinary-one", "ordinary-two"} {
+		tv.AddTabWithID(id, id, nil)
+	}
+	if _, ok := tv.SetTabPinned(0, true); !ok {
+		t.Fatal("failed to pin first tab")
+	}
+	if tv.MoveTab(0, 1) || tv.MoveTab(1, 0) {
+		t.Fatal("MoveTab crossed the pinned partition")
+	}
+	if !tv.MoveTab(1, 2) {
+		t.Fatal("ordinary tabs could not reorder within their partition")
+	}
+	if got := []string{tv.TabID(0), tv.TabID(1), tv.TabID(2)}; strings.Join(got, ",") != "pinned,ordinary-two,ordinary-one" {
+		t.Fatalf("unexpected order after guarded moves: %v", got)
 	}
 }
 
