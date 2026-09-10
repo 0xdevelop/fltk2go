@@ -19,7 +19,7 @@ func main() {
 	title.SetFontSize(22)
 	root.AddSubview(title)
 
-	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 240, Height: 28}, "Select, pin, move, or close.")
+	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 240, Height: 28}, "Middle-click a tab to close it.")
 	status.SetFrame(fltk_bridge.FLAT_BOX)
 	status.SetBackgroundColor(uint(fltk_bridge.BACKGROUND_COLOR))
 	status.View().SetAutomationID("closable-tabs.status")

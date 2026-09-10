@@ -250,6 +250,41 @@ func TestUITabViewCloseRequestUsesCurrentStableTabIndex(t *testing.T) {
 	}
 }
 
+func TestUITabViewRequestTabCloseHonorsCurrentOwnerPolicy(t *testing.T) {
+	var nilTabs *tabview.UITabView
+	if nilTabs.RequestTabClose(0) {
+		t.Fatal("nil tab view accepted a close request")
+	}
+
+	tv := tabview.NewUITabView(nil)
+	tv.AddTabWithID("pinned", "Pinned", nil)
+	tv.AddTabWithID("ordinary", "Ordinary", nil)
+	tv.SetTabsClosable(true)
+	if _, ok := tv.SetTabPinned(0, true); !ok {
+		t.Fatal("failed to pin protected tab")
+	}
+
+	var requested []string
+	tv.OnTabCloseRequested(func(index int) { requested = append(requested, tv.TabID(index)) })
+	if tv.RequestTabClose(0) {
+		t.Fatal("pinned tab accepted a close request")
+	}
+	if !tv.RequestTabClose(1) {
+		t.Fatal("ordinary tab close request was rejected")
+	}
+	if got := strings.Join(requested, ","); got != "ordinary" {
+		t.Fatalf("close requests = %q, want ordinary", got)
+	}
+
+	if !tv.SetTabClosable(1, false) || tv.RequestTabClose(1) {
+		t.Fatal("per-tab close veto was not enforced")
+	}
+	tv.SetTabsClosable(false)
+	if tv.RequestTabClose(1) {
+		t.Fatal("global close veto was not enforced")
+	}
+}
+
 func TestUITabViewCloseAffordanceVisibilityAndLifecycle(t *testing.T) {
 	tv := tabview.NewUITabView(nil)
 	tv.SetAutomationID("sessions")

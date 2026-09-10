@@ -218,10 +218,15 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		}
 	})
 	btn.View().On(fltk_bridge.PUSH, func(fltk_bridge.Event) bool {
-		if fltk_bridge.EventButton() != fltk_bridge.RightMouse {
+		switch fltk_bridge.EventButton() {
+		case fltk_bridge.MiddleMouse:
+			tv.requestTabCloseItem(item)
+			return true
+		case fltk_bridge.RightMouse:
+			return tv.requestTabContextMenuItem(item)
+		default:
 			return false
 		}
-		return tv.requestTabContextMenuItem(item)
 	})
 	tv.tabBar.Add(btn.Raw())
 	tv.v.AddAutomationChild(btn)
@@ -233,9 +238,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 	closeBtn.Raw().SetTooltip("Close " + title)
 	closeBtn.Raw().Hide()
 	closeBtn.OnTouchUpInside(func() {
-		if index := tv.indexOfItem(item); index >= 0 && tv.tabClosableItem(item) && tv.onTabCloseRequested != nil {
-			tv.onTabCloseRequested(index)
-		}
+		tv.requestTabCloseItem(item)
 	})
 	tv.tabBar.Add(closeBtn.Raw())
 	tv.v.AddAutomationChild(closeBtn)
@@ -646,6 +649,24 @@ func (tv *UITabView) OnTabCloseRequested(cb func(index int)) {
 	if tv != nil {
 		tv.onTabCloseRequested = cb
 	}
+}
+
+// RequestTabClose dispatches the same owner-controlled request used by the
+// native close affordance and middle-click gesture. Global, per-tab, and pinned
+// close policies are checked before the owner callback runs.
+func (tv *UITabView) RequestTabClose(index int) bool {
+	if tv == nil || tv.onTabCloseRequested == nil || index < 0 || index >= len(tv.tabs) || !tv.tabClosableItem(tv.tabs[index]) {
+		return false
+	}
+	tv.onTabCloseRequested(index)
+	return true
+}
+
+func (tv *UITabView) requestTabCloseItem(item *tabItem) bool {
+	if tv == nil || item == nil {
+		return false
+	}
+	return tv.RequestTabClose(tv.indexOfItem(item))
 }
 
 // OnTabContextMenuRequested installs an owner callback for native right-clicks
