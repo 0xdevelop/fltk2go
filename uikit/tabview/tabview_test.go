@@ -314,6 +314,7 @@ func TestUITabViewPinnedTabsFormLeadingPartition(t *testing.T) {
 		tv.AddTabWithID(id, id, nil)
 	}
 	tv.SelectTab(0)
+	tv.SetTabsClosable(true)
 
 	index, ok := tv.SetTabPinned(2, true)
 	if !ok || index != 0 {
@@ -335,10 +336,16 @@ func TestUITabViewPinnedTabsFormLeadingPartition(t *testing.T) {
 	if node, ok := view.AutomationLookup("sessions.tab.three"); !ok || node.AutomationSnapshot().Properties["pinned"] != "true" {
 		t.Fatalf("pinned semantic state missing: ok=%t node=%#v", ok, node)
 	}
+	if err := view.AutomationClick("sessions.tab.three.close"); err != view.ErrAutomationNodeUnavailable {
+		t.Fatalf("pinned close action error = %v, want unavailable", err)
+	}
 
 	index, ok = tv.SetTabPinned(0, false)
 	if !ok || index != 1 || tv.TabID(1) != "three" || tv.TabPinned(1) {
 		t.Fatalf("unpin did not move to ordinary boundary: index=%d ok=%t", index, ok)
+	}
+	if node, ok := view.AutomationLookup("sessions.tab.three.close"); !ok || !node.AutomationSnapshot().Visible {
+		t.Fatalf("unpin did not restore close affordance: ok=%t node=%#v", ok, node)
 	}
 }
 
