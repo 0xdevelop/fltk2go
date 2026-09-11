@@ -13,8 +13,10 @@ import (
 
 const (
 	defaultTabBarHeight = 40
+	defaultMinTabWidth  = 120
 	indicatorHeight     = 3
 	closeButtonWidth    = 28
+	overflowButtonWidth = 28
 )
 
 var automationSegmentUnsafe = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
@@ -28,6 +30,7 @@ type Style struct {
 	ActiveText        uint
 	Indicator         uint
 	FontSize          int
+	MinTabWidth       int
 }
 
 // TabContextMenuState identifies the tab that received a native right-click.
@@ -52,11 +55,13 @@ type TabMoveRequest struct {
 // UITabView is a native segmented tab container with explicit dynamic-tab
 // lifecycle, stable identity and semantic automation support.
 type UITabView struct {
-	v           view.UIView
-	raw         *fltk_bridge.Group
-	tabBar      *fltk_bridge.Group
-	contentArea *fltk_bridge.Group
-	highlight   *fltk_bridge.Box
+	v            view.UIView
+	raw          *fltk_bridge.Group
+	tabBar       *fltk_bridge.Group
+	contentArea  *fltk_bridge.Group
+	highlight    *fltk_bridge.Box
+	overflowPrev *button.UIButton
+	overflowNext *button.UIButton
 
 	tabs         []*tabItem
 	activeIndex  int
@@ -70,6 +75,7 @@ type UITabView struct {
 	tabsClosable        bool
 	dragging            *tabItem
 	dragMoved           bool
+	visibleStart        int
 }
 
 type tabItem struct {
@@ -90,6 +96,7 @@ func defaultStyle() Style {
 		ActiveText:        uint(fltk_bridge.ColorFromRgb(0, 122, 255)),
 		Indicator:         uint(fltk_bridge.ColorFromRgb(0, 122, 255)),
 		FontSize:          13,
+		MinTabWidth:       defaultMinTabWidth,
 	}
 }
 
@@ -129,6 +136,18 @@ func NewUITabView(r *foundation.Rect) *UITabView {
 		}
 		return tv.tabs[tv.activeIndex].id, true
 	})
+	tv.overflowPrev = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, "<")
+	tv.overflowNext = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, ">")
+	for _, control := range []*button.UIButton{tv.overflowPrev, tv.overflowNext} {
+		control.Raw().SetBox(fltk_bridge.FLAT_BOX)
+		control.SetBackgroundColor(style.BarBackground)
+		control.SetTitleColor(style.NormalText)
+		control.Raw().Hide()
+		tv.tabBar.Add(control.Raw())
+		tv.v.AddAutomationChild(control)
+	}
+	tv.overflowPrev.OnTouchUpInside(func() { tv.scrollVisibleTabs(-1) })
+	tv.overflowNext.OnTouchUpInside(func() { tv.scrollVisibleTabs(1) })
 	return tv
 }
 
@@ -170,6 +189,9 @@ func (tv *UITabView) SetStyle(style Style) {
 	if style.FontSize <= 0 {
 		style.FontSize = defaults.FontSize
 	}
+	if style.MinTabWidth <= 0 {
+		style.MinTabWidth = defaults.MinTabWidth
+	}
 	tv.style = style
 	tv.tabBar.SetColor(fltk_bridge.Color(style.BarBackground))
 	tv.contentArea.SetColor(fltk_bridge.Color(style.ContentBackground))
@@ -180,6 +202,12 @@ func (tv *UITabView) SetStyle(style Style) {
 		item.closeBtn.SetBackgroundColor(style.BarBackground)
 		item.closeBtn.Raw().SetLabelSize(style.FontSize + 2)
 	}
+	for _, control := range []*button.UIButton{tv.overflowPrev, tv.overflowNext} {
+		control.SetBackgroundColor(style.BarBackground)
+		control.SetTitleColor(style.NormalText)
+		control.Raw().SetLabelSize(style.FontSize + 1)
+	}
+	tv.relayoutTabs()
 	tv.updateSelectionStyles()
 	tv.raw.Redraw()
 }
@@ -192,6 +220,13 @@ func (tv *UITabView) SetAutomationID(id string) *UITabView {
 	}
 	tv.automationID = strings.TrimSpace(id)
 	tv.v.SetAutomationID(tv.automationID)
+	previousID, nextID := "", ""
+	if tv.automationID != "" {
+		previousID = tv.automationID + ".overflow.previous"
+		nextID = tv.automationID + ".overflow.next"
+	}
+	tv.overflowPrev.View().SetAutomationID(previousID).SetAutomationRole("button").SetAutomationName("Previous tabs")
+	tv.overflowNext.View().SetAutomationID(nextID).SetAutomationRole("button").SetAutomationName("Next tabs")
 	tv.updateAutomation()
 	return tv
 }
@@ -486,16 +521,59 @@ func (tv *UITabView) RemoveTab(index int) bool {
 }
 
 func (tv *UITabView) relayoutTabs() {
+	tv.layoutTabs(true)
+}
+
+func (tv *UITabView) layoutTabs(revealActive bool) {
 	count := len(tv.tabs)
 	if count == 0 {
+		tv.visibleStart = 0
+		tv.overflowPrev.Raw().Hide()
+		tv.overflowNext.Raw().Hide()
 		return
 	}
-	baseWidth := tv.tabBar.W() / count
+	minWidth := tv.style.MinTabWidth
+	if minWidth <= 0 {
+		minWidth = defaultMinTabWidth
+	}
+	overflow := count*minWidth > tv.tabBar.W()
+	capacity := count
+	availableWidth := tv.tabBar.W()
+	if overflow {
+		availableWidth -= overflowButtonWidth * 2
+		capacity = availableWidth / minWidth
+		if capacity < 1 {
+			capacity = 1
+		}
+		if capacity > count {
+			capacity = count
+		}
+		maxStart := count - capacity
+		if tv.visibleStart > maxStart {
+			tv.visibleStart = maxStart
+		}
+		if revealActive && tv.activeIndex >= 0 {
+			if tv.activeIndex < tv.visibleStart {
+				tv.visibleStart = tv.activeIndex
+			} else if tv.activeIndex >= tv.visibleStart+capacity {
+				tv.visibleStart = tv.activeIndex - capacity + 1
+			}
+		}
+	} else {
+		tv.visibleStart = 0
+	}
+	visibleEnd := tv.visibleStart + capacity
+	baseWidth := availableWidth / capacity
 	x := tv.tabBar.X()
 	for i, item := range tv.tabs {
+		if i < tv.visibleStart || i >= visibleEnd {
+			item.btn.Raw().Hide()
+			item.closeBtn.Raw().Hide()
+			continue
+		}
 		width := baseWidth
-		if i == count-1 {
-			width = tv.tabBar.X() + tv.tabBar.W() - x
+		if i == visibleEnd-1 {
+			width = tv.tabBar.X() + availableWidth - x
 		}
 		labelWidth := width
 		if tv.tabClosableItem(item) {
@@ -510,14 +588,95 @@ func (tv *UITabView) relayoutTabs() {
 			item.closeBtn.Raw().Hide()
 		}
 		item.btn.Raw().Resize(x, tv.tabBar.Y(), labelWidth, tv.tabBar.H()-indicatorHeight)
+		item.btn.Raw().Show()
 		x += width
+	}
+	if overflow {
+		controlsX := tv.tabBar.X() + availableWidth
+		tv.overflowPrev.Raw().Resize(controlsX, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
+		tv.overflowNext.Raw().Resize(controlsX+overflowButtonWidth, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
+		tv.overflowPrev.Raw().Show()
+		tv.overflowNext.Raw().Show()
+	} else {
+		tv.overflowPrev.Raw().Hide()
+		tv.overflowNext.Raw().Hide()
 	}
 	tv.tabBar.Remove(tv.highlight)
 	tv.tabBar.Add(tv.highlight)
-	if tv.activeIndex >= 0 && tv.activeIndex < count {
+	if tv.activeIndex >= tv.visibleStart && tv.activeIndex < visibleEnd {
 		active := tv.tabs[tv.activeIndex].btn.Raw()
 		tv.highlight.Resize(active.X(), tv.tabBar.Y()+tv.tabBar.H()-indicatorHeight, active.W(), indicatorHeight)
+	} else {
+		tv.highlight.Resize(tv.tabBar.X(), tv.tabBar.Y()+tv.tabBar.H()-indicatorHeight, 0, indicatorHeight)
 	}
+}
+
+// VisibleRange reports the half-open range of native tab labels currently
+// displayed and whether overflow navigation is active.
+func (tv *UITabView) VisibleRange() (start, end int, overflow bool) {
+	if tv == nil || len(tv.tabs) == 0 {
+		return 0, 0, false
+	}
+	minWidth := tv.style.MinTabWidth
+	if minWidth <= 0 {
+		minWidth = defaultMinTabWidth
+	}
+	overflow = len(tv.tabs)*minWidth > tv.tabBar.W()
+	if !overflow {
+		return 0, len(tv.tabs), false
+	}
+	capacity := (tv.tabBar.W() - overflowButtonWidth*2) / minWidth
+	if capacity < 1 {
+		capacity = 1
+	}
+	end = tv.visibleStart + capacity
+	if end > len(tv.tabs) {
+		end = len(tv.tabs)
+	}
+	return tv.visibleStart, end, true
+}
+
+func (tv *UITabView) scrollVisibleTabs(delta int) {
+	start, end, overflow := tv.VisibleRange()
+	if !overflow || delta == 0 {
+		return
+	}
+	maxStart := len(tv.tabs) - (end - start)
+	tv.visibleStart += delta
+	if tv.visibleStart < 0 {
+		tv.visibleStart = 0
+	}
+	if tv.visibleStart > maxStart {
+		tv.visibleStart = maxStart
+	}
+	tv.layoutTabs(false)
+	tv.raw.Redraw()
+}
+
+// Resize updates the native container and every owned tab/content viewport.
+// Callers should prefer this over resizing Raw directly so overflow geometry is
+// recomputed deterministically.
+func (tv *UITabView) Resize(x, y, width, height int) {
+	if tv == nil || tv.raw == nil {
+		return
+	}
+	tv.raw.Resize(x, y, width, height)
+	tv.tabBar.Resize(x, y, width, defaultTabBarHeight)
+	contentHeight := height - defaultTabBarHeight
+	if contentHeight < 0 {
+		contentHeight = 0
+	}
+	tv.contentArea.Resize(x, y+defaultTabBarHeight, width, contentHeight)
+	for _, item := range tv.tabs {
+		if item.content == nil || item.content.View() == nil || item.content.View().Raw() == nil {
+			continue
+		}
+		if raw, ok := item.content.View().Raw().(interface{ Resize(int, int, int, int) }); ok {
+			raw.Resize(x, y+defaultTabBarHeight, width, contentHeight)
+		}
+	}
+	tv.relayoutTabs()
+	tv.raw.Redraw()
 }
 
 func (tv *UITabView) SelectTab(index int) {

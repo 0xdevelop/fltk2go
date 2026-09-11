@@ -115,6 +115,52 @@ func TestUITabViewSelectAdjacentRequiresMultipleTabs(t *testing.T) {
 	}
 }
 
+func TestUITabViewOverflowKeepsTabsUsableAtMinimumWidth(t *testing.T) {
+	tv := tabview.NewUITabView(&foundation.Rect{Width: 360, Height: 120})
+	tv.SetAutomationID("sessions")
+	tv.SetStyle(tabview.Style{MinTabWidth: 120})
+	for _, id := range []string{"one", "two", "three", "four", "five"} {
+		tv.AddTabWithID(id, strings.ToUpper(id), nil)
+	}
+
+	start, end, overflow := tv.VisibleRange()
+	if !overflow || start != 0 || end != 2 {
+		t.Fatalf("initial visible range = %d:%d overflow=%t, want 0:2 true", start, end, overflow)
+	}
+	for id, visible := range map[string]bool{"one": true, "two": true, "three": false, "four": false, "five": false} {
+		node, ok := view.AutomationLookup("sessions.tab." + id)
+		if !ok || node.AutomationSnapshot().Visible != visible {
+			t.Fatalf("tab %s visibility = %t, ok=%t; want %t", id, node.AutomationSnapshot().Visible, ok, visible)
+		}
+	}
+
+	// Programmatic and keyboard-driven selection must always reveal the selected
+	// identity instead of leaving focus on an off-strip tab.
+	tv.SelectTab(4)
+	start, end, overflow = tv.VisibleRange()
+	if !overflow || start != 3 || end != 5 {
+		t.Fatalf("selected-last visible range = %d:%d overflow=%t, want 3:5 true", start, end, overflow)
+	}
+	if node, ok := view.AutomationLookup("sessions.tab.five"); !ok || !node.AutomationSnapshot().Visible {
+		t.Fatal("selected overflow tab was not revealed")
+	}
+
+	if err := view.AutomationClick("sessions.overflow.previous"); err != nil {
+		t.Fatalf("previous overflow action failed: %v", err)
+	}
+	start, end, _ = tv.VisibleRange()
+	if start != 2 || end != 4 {
+		t.Fatalf("previous overflow range = %d:%d, want 2:4", start, end)
+	}
+
+	// Growing the host removes overflow and restores every native tab.
+	tv.Resize(0, 0, 600, 120)
+	start, end, overflow = tv.VisibleRange()
+	if overflow || start != 0 || end != 5 {
+		t.Fatalf("expanded visible range = %d:%d overflow=%t, want 0:5 false", start, end, overflow)
+	}
+}
+
 func TestUITabViewMoveTabPreservesActiveIdentityAndAutomationOrder(t *testing.T) {
 	tv := tabview.NewUITabView(nil)
 	tv.SetAutomationID("sessions")

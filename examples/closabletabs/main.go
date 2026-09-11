@@ -27,7 +27,7 @@ func main() {
 
 	tabs := uikit.NewUITabView(&foundation.Rect{X: 32, Y: 110, Width: 696, Height: 300})
 	tabs.SetAutomationID("closable-tabs")
-	for index, name := range []string{"Local Shell", "Production", "Logs"} {
+	for index, name := range []string{"Local Shell", "Production", "Logs", "Staging", "Metrics", "Backups"} {
 		panel := uikit.NewUIGroup(&foundation.Rect{})
 		message := uikit.NewUILabel(&foundation.Rect{X: 52, Y: 190, Width: 656, Height: 36}, fmt.Sprintf("%s content", name))
 		message.SetFontSize(18)
