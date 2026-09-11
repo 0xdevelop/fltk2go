@@ -233,7 +233,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		case fltk_bridge.LeftMouse:
 			tv.dragging = item
 			tv.dragMoved = false
-			return true
+			return false
 		case fltk_bridge.MiddleMouse:
 			tv.requestTabCloseItem(item)
 			return true
@@ -244,7 +244,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		}
 	})
 	btn.View().On(fltk_bridge.DRAG, func(fltk_bridge.Event) bool {
-		if tv.dragging != item || !fltk_bridge.EventButton1() {
+		if tv.dragging != item {
 			return false
 		}
 		from := tv.indexOfItem(item)
@@ -259,14 +259,10 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		if tv.dragging != item {
 			return false
 		}
-		if !tv.dragMoved {
-			if index := tv.indexOfItem(item); index >= 0 {
-				tv.SelectTab(index)
-			}
-		}
+		moved := tv.dragMoved
 		tv.dragging = nil
 		tv.dragMoved = false
-		return true
+		return moved
 	})
 	tv.tabBar.Add(btn.Raw())
 	tv.v.AddAutomationChild(btn)
