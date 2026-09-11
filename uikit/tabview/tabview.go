@@ -41,6 +41,14 @@ type TabContextMenuState struct {
 	Pinned   bool
 }
 
+// TabMoveRequest identifies a native drag reorder without mutating owner state.
+// ID remains stable while From and To describe the strip order at dispatch time.
+type TabMoveRequest struct {
+	ID   string
+	From int
+	To   int
+}
+
 // UITabView is a native segmented tab container with explicit dynamic-tab
 // lifecycle, stable identity and semantic automation support.
 type UITabView struct {
@@ -58,7 +66,9 @@ type UITabView struct {
 	onTabChanged        func(index int)
 	onTabCloseRequested func(index int)
 	onTabContextMenu    func(state TabContextMenuState)
+	onTabMoveRequested  func(request TabMoveRequest)
 	tabsClosable        bool
+	dragging            *tabItem
 }
 
 type tabItem struct {
@@ -219,6 +229,9 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 	})
 	btn.View().On(fltk_bridge.PUSH, func(fltk_bridge.Event) bool {
 		switch fltk_bridge.EventButton() {
+		case fltk_bridge.LeftMouse:
+			tv.dragging = item
+			return false
 		case fltk_bridge.MiddleMouse:
 			tv.requestTabCloseItem(item)
 			return true
@@ -227,6 +240,24 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		default:
 			return false
 		}
+	})
+	btn.View().On(fltk_bridge.DRAG, func(fltk_bridge.Event) bool {
+		if tv.dragging != item || !fltk_bridge.EventButton1() {
+			return false
+		}
+		from := tv.indexOfItem(item)
+		to := tv.tabIndexAtX(fltk_bridge.EventX())
+		if from >= 0 && to >= 0 && from != to {
+			tv.RequestTabMove(from, to)
+		}
+		return true
+	})
+	btn.View().On(fltk_bridge.RELEASE, func(fltk_bridge.Event) bool {
+		if tv.dragging != item {
+			return false
+		}
+		tv.dragging = nil
+		return false
 	})
 	tv.tabBar.Add(btn.Raw())
 	tv.v.AddAutomationChild(btn)
@@ -282,6 +313,23 @@ func (tv *UITabView) indexOfItem(target *tabItem) int {
 	return -1
 }
 
+func (tv *UITabView) tabIndexAtX(x int) int {
+	if tv == nil || len(tv.tabs) == 0 {
+		return -1
+	}
+	for index, item := range tv.tabs {
+		left := item.btn.Raw().X()
+		right := item.btn.Raw().X() + item.btn.Raw().W()
+		if item.closeBtn != nil && item.closeBtn.Raw().Visible() {
+			right = item.closeBtn.Raw().X() + item.closeBtn.Raw().W()
+		}
+		if x < left+(right-left)/2 {
+			return index
+		}
+	}
+	return len(tv.tabs) - 1
+}
+
 func (tv *UITabView) Count() int {
 	if tv == nil {
 		return 0
@@ -327,6 +375,28 @@ func (tv *UITabView) MoveTab(from, to int) bool {
 		return false
 	}
 	tv.moveTabUnchecked(from, to)
+	return true
+}
+
+// OnTabMoveRequested installs the owner callback for native tab dragging.
+// The owner remains responsible for moving its domain model and then applying
+// the same move through MoveTab so product and toolkit order stay atomic.
+func (tv *UITabView) OnTabMoveRequested(cb func(request TabMoveRequest)) {
+	if tv != nil {
+		tv.onTabMoveRequested = cb
+	}
+}
+
+// RequestTabMove dispatches the native drag contract without changing order.
+// Invalid, no-op, and pinned-partition-crossing moves fail closed.
+func (tv *UITabView) RequestTabMove(from, to int) bool {
+	if tv == nil || tv.onTabMoveRequested == nil || from < 0 || from >= len(tv.tabs) || to < 0 || to >= len(tv.tabs) || from == to {
+		return false
+	}
+	if tv.tabs[from].pinned != tv.tabs[to].pinned {
+		return false
+	}
+	tv.onTabMoveRequested(TabMoveRequest{ID: tv.tabs[from].id, From: from, To: to})
 	return true
 }
 

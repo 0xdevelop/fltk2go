@@ -19,7 +19,7 @@ func main() {
 	title.SetFontSize(22)
 	root.AddSubview(title)
 
-	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 240, Height: 28}, "Middle-click a tab to close it.")
+	status := uikit.NewUILabel(&foundation.Rect{X: 32, Y: 66, Width: 240, Height: 28}, "Drag tabs; middle-click closes.")
 	status.SetFrame(fltk_bridge.FLAT_BOX)
 	status.SetBackgroundColor(uint(fltk_bridge.BACKGROUND_COLOR))
 	status.View().SetAutomationID("closable-tabs.status")
@@ -39,6 +39,11 @@ func main() {
 		id := tabs.TabID(index)
 		if tabs.RemoveTab(index) {
 			status.SetText(fmt.Sprintf("Closed %s · %d tab(s) remain", id, tabs.Count()))
+		}
+	})
+	tabs.OnTabMoveRequested(func(request uikit.TabMoveRequest) {
+		if tabs.MoveTab(request.From, request.To) {
+			status.SetText(fmt.Sprintf("Moved %s to position %d", request.ID, request.To+1))
 		}
 	})
 	root.AddSubview(tabs)

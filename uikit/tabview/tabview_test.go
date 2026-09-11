@@ -161,6 +161,50 @@ func TestUITabViewMoveTabRejectsInvalidOrNoopMoves(t *testing.T) {
 	}
 }
 
+func TestUITabViewMoveRequestUsesStableIdentityAndOwnerControl(t *testing.T) {
+	tv := tabview.NewUITabView(nil)
+	tv.AddTabWithID("one", "One", nil)
+	tv.AddTabWithID("two", "Two", nil)
+	tv.AddTabWithID("three", "Three", nil)
+
+	var requests []tabview.TabMoveRequest
+	tv.OnTabMoveRequested(func(request tabview.TabMoveRequest) { requests = append(requests, request) })
+	if !tv.RequestTabMove(1, 0) {
+		t.Fatal("valid move request was rejected")
+	}
+	if len(requests) != 1 || requests[0].ID != "two" || requests[0].From != 1 || requests[0].To != 0 {
+		t.Fatalf("move requests = %#v", requests)
+	}
+	if tv.TabID(0) != "one" || tv.TabID(1) != "two" {
+		t.Fatal("request mutated tab order before the owner accepted it")
+	}
+	if !tv.MoveTab(requests[0].From, requests[0].To) || tv.TabID(0) != "two" {
+		t.Fatal("owner could not apply the requested move")
+	}
+}
+
+func TestUITabViewMoveRequestRejectsInvalidAndPinnedBoundaryMoves(t *testing.T) {
+	var nilTabs *tabview.UITabView
+	if nilTabs.RequestTabMove(0, 1) {
+		t.Fatal("nil tab view accepted a move request")
+	}
+	tv := tabview.NewUITabView(nil)
+	tv.AddTabWithID("pinned", "Pinned", nil)
+	tv.AddTabWithID("one", "One", nil)
+	tv.AddTabWithID("two", "Two", nil)
+	if _, ok := tv.SetTabPinned(0, true); !ok {
+		t.Fatal("failed to pin leading tab")
+	}
+	called := 0
+	tv.OnTabMoveRequested(func(tabview.TabMoveRequest) { called++ })
+	if tv.RequestTabMove(1, 0) || tv.RequestTabMove(-1, 1) || tv.RequestTabMove(1, 3) || tv.RequestTabMove(1, 1) {
+		t.Fatal("invalid or cross-partition move request was accepted")
+	}
+	if !tv.RequestTabMove(2, 1) || called != 1 {
+		t.Fatalf("ordinary move request failed: called=%d", called)
+	}
+}
+
 func TestUITabViewStableIDsAndDynamicRemoval(t *testing.T) {
 	tv := tabview.NewUITabView(nil)
 	tv.SetAutomationID("sessions")
