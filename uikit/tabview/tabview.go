@@ -90,6 +90,8 @@ type UITabView struct {
 	dragging            *tabItem
 	dragMoved           bool
 	visibleStart        int
+	visibleEnd          int
+	visiblePinnedCount  int
 }
 
 type tabItem struct {
@@ -546,6 +548,8 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 	count := len(tv.tabs)
 	if count == 0 {
 		tv.visibleStart = 0
+		tv.visibleEnd = 0
+		tv.visiblePinnedCount = 0
 		tv.overflowPrev.Raw().Hide()
 		tv.overflowNext.Raw().Hide()
 		tv.overflowList.Raw().Hide()
@@ -567,31 +571,61 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 		if capacity > count {
 			capacity = count
 		}
-		maxStart := count - capacity
-		if tv.visibleStart > maxStart {
-			tv.visibleStart = maxStart
-		}
-		if revealActive && tv.activeIndex >= 0 {
-			if tv.activeIndex < tv.visibleStart {
-				tv.visibleStart = tv.activeIndex
-			} else if tv.activeIndex >= tv.visibleStart+capacity {
-				tv.visibleStart = tv.activeIndex - capacity + 1
+		pinnedCount := tv.PinnedCount()
+		stickyPinned := pinnedCount > 0 && pinnedCount < capacity
+		tv.visiblePinnedCount = 0
+		if stickyPinned {
+			tv.visiblePinnedCount = pinnedCount
+			ordinaryCapacity := capacity - pinnedCount
+			minStart := pinnedCount
+			maxStart := count - ordinaryCapacity
+			if tv.visibleStart < minStart {
+				tv.visibleStart = minStart
 			}
+			if tv.visibleStart > maxStart {
+				tv.visibleStart = maxStart
+			}
+			if revealActive && tv.activeIndex >= pinnedCount {
+				if tv.activeIndex < tv.visibleStart {
+					tv.visibleStart = tv.activeIndex
+				} else if tv.activeIndex >= tv.visibleStart+ordinaryCapacity {
+					tv.visibleStart = tv.activeIndex - ordinaryCapacity + 1
+				}
+			}
+			tv.visibleEnd = tv.visibleStart + ordinaryCapacity
+		} else {
+			maxStart := count - capacity
+			if tv.visibleStart > maxStart {
+				tv.visibleStart = maxStart
+			}
+			if tv.visibleStart < 0 {
+				tv.visibleStart = 0
+			}
+			if revealActive && tv.activeIndex >= 0 {
+				if tv.activeIndex < tv.visibleStart {
+					tv.visibleStart = tv.activeIndex
+				} else if tv.activeIndex >= tv.visibleStart+capacity {
+					tv.visibleStart = tv.activeIndex - capacity + 1
+				}
+			}
+			tv.visibleEnd = tv.visibleStart + capacity
 		}
 	} else {
 		tv.visibleStart = 0
+		tv.visibleEnd = count
+		tv.visiblePinnedCount = 0
 	}
-	visibleEnd := tv.visibleStart + capacity
 	baseWidth := availableWidth / capacity
 	x := tv.tabBar.X()
+	lastVisible := tv.visibleEnd - 1
 	for i, item := range tv.tabs {
-		if i < tv.visibleStart || i >= visibleEnd {
+		if !tv.isTabVisible(i) {
 			item.btn.Raw().Hide()
 			item.closeBtn.Raw().Hide()
 			continue
 		}
 		width := baseWidth
-		if i == visibleEnd-1 {
+		if i == lastVisible {
 			width = tv.tabBar.X() + availableWidth - x
 		}
 		labelWidth := width
@@ -625,7 +659,7 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 	}
 	tv.tabBar.Remove(tv.highlight)
 	tv.tabBar.Add(tv.highlight)
-	if tv.activeIndex >= tv.visibleStart && tv.activeIndex < visibleEnd {
+	if tv.isTabVisible(tv.activeIndex) {
 		active := tv.tabs[tv.activeIndex].btn.Raw()
 		tv.highlight.Resize(active.X(), tv.tabBar.Y()+tv.tabBar.H()-indicatorHeight, active.W(), indicatorHeight)
 	} else {
@@ -633,7 +667,12 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 	}
 }
 
-// VisibleRange reports the half-open range of native tab labels currently
+func (tv *UITabView) isTabVisible(index int) bool {
+	return tv != nil && index >= 0 && index < len(tv.tabs) &&
+		(index < tv.visiblePinnedCount || (index >= tv.visibleStart && index < tv.visibleEnd))
+}
+
+// VisibleRange reports the half-open range of scrollable native tab labels
 // displayed and whether overflow navigation is active.
 func (tv *UITabView) VisibleRange() (start, end int, overflow bool) {
 	if tv == nil || len(tv.tabs) == 0 {
@@ -647,15 +686,7 @@ func (tv *UITabView) VisibleRange() (start, end int, overflow bool) {
 	if !overflow {
 		return 0, len(tv.tabs), false
 	}
-	capacity := (tv.tabBar.W() - overflowButtonWidth*overflowControlCount) / minWidth
-	if capacity < 1 {
-		capacity = 1
-	}
-	end = tv.visibleStart + capacity
-	if end > len(tv.tabs) {
-		end = len(tv.tabs)
-	}
-	return tv.visibleStart, end, true
+	return tv.visibleStart, tv.visibleEnd, true
 }
 
 func (tv *UITabView) scrollVisibleTabs(delta int) {
@@ -663,10 +694,14 @@ func (tv *UITabView) scrollVisibleTabs(delta int) {
 	if !overflow || delta == 0 {
 		return
 	}
+	minStart := 0
+	if tv.visiblePinnedCount > 0 {
+		minStart = tv.visiblePinnedCount
+	}
 	maxStart := len(tv.tabs) - (end - start)
 	tv.visibleStart += delta
-	if tv.visibleStart < 0 {
-		tv.visibleStart = 0
+	if tv.visibleStart < minStart {
+		tv.visibleStart = minStart
 	}
 	if tv.visibleStart > maxStart {
 		tv.visibleStart = maxStart
@@ -819,7 +854,7 @@ func (tv *UITabView) RequestTabList() bool {
 	if tv == nil || tv.onTabListRequested == nil {
 		return false
 	}
-	start, end, overflow := tv.VisibleRange()
+	_, _, overflow := tv.VisibleRange()
 	if !overflow {
 		return false
 	}
@@ -831,7 +866,7 @@ func (tv *UITabView) RequestTabList() bool {
 			Index:    index,
 			Selected: index == tv.activeIndex,
 			Pinned:   item.pinned,
-			Visible:  index >= start && index < end,
+			Visible:  tv.isTabVisible(index),
 		}
 	}
 	tv.onTabListRequested(items)

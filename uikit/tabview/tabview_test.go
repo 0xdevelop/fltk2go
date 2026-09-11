@@ -208,6 +208,48 @@ func TestUITabViewOverflowListRequestReportsStableCompleteOrder(t *testing.T) {
 	}
 }
 
+func TestUITabViewOverflowKeepsPinnedTabsVisibleWhileOrdinaryTabsScroll(t *testing.T) {
+	tv := tabview.NewUITabView(&foundation.Rect{Width: 500, Height: 120})
+	tv.SetAutomationID("sessions")
+	tv.SetStyle(tabview.Style{MinTabWidth: 120})
+	for _, id := range []string{"pinned", "one", "two", "three", "four"} {
+		tv.AddTabWithID(id, strings.ToUpper(id), nil)
+	}
+	if _, ok := tv.SetTabPinned(0, true); !ok {
+		t.Fatal("failed to pin leading tab")
+	}
+	tv.SelectTab(4)
+
+	for id, visible := range map[string]bool{"pinned": true, "one": false, "two": false, "three": true, "four": true} {
+		node, ok := view.AutomationLookup("sessions.tab." + id)
+		if !ok || node.AutomationSnapshot().Visible != visible {
+			t.Fatalf("tab %s visibility = %t, ok=%t; want %t", id, node.AutomationSnapshot().Visible, ok, visible)
+		}
+	}
+
+	if err := view.AutomationClick("sessions.overflow.previous"); err != nil {
+		t.Fatalf("previous overflow action failed: %v", err)
+	}
+	for id, visible := range map[string]bool{"pinned": true, "one": false, "two": true, "three": true, "four": false} {
+		node, ok := view.AutomationLookup("sessions.tab." + id)
+		if !ok || node.AutomationSnapshot().Visible != visible {
+			t.Fatalf("after scroll tab %s visibility = %t, ok=%t; want %t", id, node.AutomationSnapshot().Visible, ok, visible)
+		}
+	}
+
+	var listed []tabview.TabListItem
+	tv.OnTabListRequested(func(items []tabview.TabListItem) { listed = items })
+	if !tv.RequestTabList() || len(listed) != 5 {
+		t.Fatalf("tab list = %#v", listed)
+	}
+	for _, item := range listed {
+		wantVisible := item.ID == "pinned" || item.ID == "two" || item.ID == "three"
+		if item.Visible != wantVisible {
+			t.Fatalf("listed tab %s visible=%t, want %t", item.ID, item.Visible, wantVisible)
+		}
+	}
+}
+
 func TestUITabViewMoveTabPreservesActiveIdentityAndAutomationOrder(t *testing.T) {
 	tv := tabview.NewUITabView(nil)
 	tv.SetAutomationID("sessions")
@@ -516,6 +558,10 @@ func TestUITabViewPinnedTabsFormLeadingPartition(t *testing.T) {
 	if !ok || index != 1 || tv.TabID(1) != "three" || tv.TabPinned(1) {
 		t.Fatalf("unpin did not move to ordinary boundary: index=%d ok=%t", index, ok)
 	}
+	if !tv.TabClosable(index) {
+		t.Fatal("unpin did not restore owner close policy")
+	}
+	tv.SelectTab(index)
 	if node, ok := view.AutomationLookup("sessions.tab.three.close"); !ok || !node.AutomationSnapshot().Visible {
 		t.Fatalf("unpin did not restore close affordance: ok=%t node=%#v", ok, node)
 	}
