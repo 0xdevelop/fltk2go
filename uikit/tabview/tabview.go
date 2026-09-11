@@ -69,6 +69,7 @@ type UITabView struct {
 	onTabMoveRequested  func(request TabMoveRequest)
 	tabsClosable        bool
 	dragging            *tabItem
+	dragMoved           bool
 }
 
 type tabItem struct {
@@ -231,7 +232,8 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		switch fltk_bridge.EventButton() {
 		case fltk_bridge.LeftMouse:
 			tv.dragging = item
-			return false
+			tv.dragMoved = false
+			return true
 		case fltk_bridge.MiddleMouse:
 			tv.requestTabCloseItem(item)
 			return true
@@ -248,6 +250,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		from := tv.indexOfItem(item)
 		to := tv.tabIndexAtX(fltk_bridge.EventX())
 		if from >= 0 && to >= 0 && from != to {
+			tv.dragMoved = true
 			tv.RequestTabMove(from, to)
 		}
 		return true
@@ -256,8 +259,14 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 		if tv.dragging != item {
 			return false
 		}
+		if !tv.dragMoved {
+			if index := tv.indexOfItem(item); index >= 0 {
+				tv.SelectTab(index)
+			}
+		}
 		tv.dragging = nil
-		return false
+		tv.dragMoved = false
+		return true
 	})
 	tv.tabBar.Add(btn.Raw())
 	tv.v.AddAutomationChild(btn)
