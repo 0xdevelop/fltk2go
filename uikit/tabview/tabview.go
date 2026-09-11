@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	defaultTabBarHeight = 40
-	defaultMinTabWidth  = 120
-	indicatorHeight     = 3
-	closeButtonWidth    = 28
-	overflowButtonWidth = 28
+	defaultTabBarHeight  = 40
+	defaultMinTabWidth   = 120
+	indicatorHeight      = 3
+	closeButtonWidth     = 28
+	overflowButtonWidth  = 28
+	overflowControlCount = 3
 )
 
 var automationSegmentUnsafe = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
@@ -52,6 +53,17 @@ type TabMoveRequest struct {
 	To   int
 }
 
+// TabListItem is an immutable snapshot used by an owner-provided overflow
+// picker. ID remains authoritative if tabs move before an action executes.
+type TabListItem struct {
+	ID       string
+	Title    string
+	Index    int
+	Selected bool
+	Pinned   bool
+	Visible  bool
+}
+
 // UITabView is a native segmented tab container with explicit dynamic-tab
 // lifecycle, stable identity and semantic automation support.
 type UITabView struct {
@@ -62,6 +74,7 @@ type UITabView struct {
 	highlight    *fltk_bridge.Box
 	overflowPrev *button.UIButton
 	overflowNext *button.UIButton
+	overflowList *button.UIButton
 
 	tabs         []*tabItem
 	activeIndex  int
@@ -72,6 +85,7 @@ type UITabView struct {
 	onTabCloseRequested func(index int)
 	onTabContextMenu    func(state TabContextMenuState)
 	onTabMoveRequested  func(request TabMoveRequest)
+	onTabListRequested  func(items []TabListItem)
 	tabsClosable        bool
 	dragging            *tabItem
 	dragMoved           bool
@@ -138,7 +152,8 @@ func NewUITabView(r *foundation.Rect) *UITabView {
 	})
 	tv.overflowPrev = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, "<")
 	tv.overflowNext = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, ">")
-	for _, control := range []*button.UIButton{tv.overflowPrev, tv.overflowNext} {
+	tv.overflowList = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, "v")
+	for _, control := range []*button.UIButton{tv.overflowPrev, tv.overflowNext, tv.overflowList} {
 		control.Raw().SetBox(fltk_bridge.FLAT_BOX)
 		control.SetBackgroundColor(style.BarBackground)
 		control.SetTitleColor(style.NormalText)
@@ -148,6 +163,7 @@ func NewUITabView(r *foundation.Rect) *UITabView {
 	}
 	tv.overflowPrev.OnTouchUpInside(func() { tv.scrollVisibleTabs(-1) })
 	tv.overflowNext.OnTouchUpInside(func() { tv.scrollVisibleTabs(1) })
+	tv.overflowList.OnTouchUpInside(func() { tv.RequestTabList() })
 	return tv
 }
 
@@ -202,7 +218,7 @@ func (tv *UITabView) SetStyle(style Style) {
 		item.closeBtn.SetBackgroundColor(style.BarBackground)
 		item.closeBtn.Raw().SetLabelSize(style.FontSize + 2)
 	}
-	for _, control := range []*button.UIButton{tv.overflowPrev, tv.overflowNext} {
+	for _, control := range []*button.UIButton{tv.overflowPrev, tv.overflowNext, tv.overflowList} {
 		control.SetBackgroundColor(style.BarBackground)
 		control.SetTitleColor(style.NormalText)
 		control.Raw().SetLabelSize(style.FontSize + 1)
@@ -220,13 +236,15 @@ func (tv *UITabView) SetAutomationID(id string) *UITabView {
 	}
 	tv.automationID = strings.TrimSpace(id)
 	tv.v.SetAutomationID(tv.automationID)
-	previousID, nextID := "", ""
+	previousID, nextID, listID := "", "", ""
 	if tv.automationID != "" {
 		previousID = tv.automationID + ".overflow.previous"
 		nextID = tv.automationID + ".overflow.next"
+		listID = tv.automationID + ".overflow.list"
 	}
 	tv.overflowPrev.View().SetAutomationID(previousID).SetAutomationRole("button").SetAutomationName("Previous tabs")
 	tv.overflowNext.View().SetAutomationID(nextID).SetAutomationRole("button").SetAutomationName("Next tabs")
+	tv.overflowList.View().SetAutomationID(listID).SetAutomationRole("button").SetAutomationName("All tabs")
 	tv.updateAutomation()
 	return tv
 }
@@ -530,6 +548,7 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 		tv.visibleStart = 0
 		tv.overflowPrev.Raw().Hide()
 		tv.overflowNext.Raw().Hide()
+		tv.overflowList.Raw().Hide()
 		return
 	}
 	minWidth := tv.style.MinTabWidth
@@ -540,7 +559,7 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 	capacity := count
 	availableWidth := tv.tabBar.W()
 	if overflow {
-		availableWidth -= overflowButtonWidth * 2
+		availableWidth -= overflowButtonWidth * overflowControlCount
 		capacity = availableWidth / minWidth
 		if capacity < 1 {
 			capacity = 1
@@ -595,11 +614,14 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 		controlsX := tv.tabBar.X() + availableWidth
 		tv.overflowPrev.Raw().Resize(controlsX, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
 		tv.overflowNext.Raw().Resize(controlsX+overflowButtonWidth, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
+		tv.overflowList.Raw().Resize(controlsX+overflowButtonWidth*2, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
 		tv.overflowPrev.Raw().Show()
 		tv.overflowNext.Raw().Show()
+		tv.overflowList.Raw().Show()
 	} else {
 		tv.overflowPrev.Raw().Hide()
 		tv.overflowNext.Raw().Hide()
+		tv.overflowList.Raw().Hide()
 	}
 	tv.tabBar.Remove(tv.highlight)
 	tv.tabBar.Add(tv.highlight)
@@ -625,7 +647,7 @@ func (tv *UITabView) VisibleRange() (start, end int, overflow bool) {
 	if !overflow {
 		return 0, len(tv.tabs), false
 	}
-	capacity := (tv.tabBar.W() - overflowButtonWidth*2) / minWidth
+	capacity := (tv.tabBar.W() - overflowButtonWidth*overflowControlCount) / minWidth
 	if capacity < 1 {
 		capacity = 1
 	}
@@ -779,6 +801,41 @@ func (tv *UITabView) OnTabChanged(cb func(index int)) {
 	if tv != nil {
 		tv.onTabChanged = cb
 	}
+}
+
+// OnTabListRequested installs an owner callback for the overflow list button.
+// The component supplies ordered stable identities while the product owns menu
+// wording, policy, and lifecycle.
+func (tv *UITabView) OnTabListRequested(cb func(items []TabListItem)) {
+	if tv != nil {
+		tv.onTabListRequested = cb
+	}
+}
+
+// RequestTabList dispatches a complete current snapshot only while the strip
+// is overflowing. This is also the semantic automation path for the list
+// button; callbacks should resolve ID again when an item is eventually chosen.
+func (tv *UITabView) RequestTabList() bool {
+	if tv == nil || tv.onTabListRequested == nil {
+		return false
+	}
+	start, end, overflow := tv.VisibleRange()
+	if !overflow {
+		return false
+	}
+	items := make([]TabListItem, len(tv.tabs))
+	for index, item := range tv.tabs {
+		items[index] = TabListItem{
+			ID:       item.id,
+			Title:    item.title,
+			Index:    index,
+			Selected: index == tv.activeIndex,
+			Pinned:   item.pinned,
+			Visible:  index >= start && index < end,
+		}
+	}
+	tv.onTabListRequested(items)
+	return true
 }
 
 // SetTabsClosable shows or hides a native close affordance on every tab. A

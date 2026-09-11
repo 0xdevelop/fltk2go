@@ -161,6 +161,53 @@ func TestUITabViewOverflowKeepsTabsUsableAtMinimumWidth(t *testing.T) {
 	}
 }
 
+func TestUITabViewOverflowListRequestReportsStableCompleteOrder(t *testing.T) {
+	tv := tabview.NewUITabView(&foundation.Rect{Width: 420, Height: 120})
+	tv.SetAutomationID("sessions")
+	tv.SetStyle(tabview.Style{MinTabWidth: 120})
+	for _, id := range []string{"one", "two", "three", "four"} {
+		tv.AddTabWithID(id, strings.ToUpper(id), nil)
+	}
+	tv.SelectTab(3)
+	if _, ok := tv.SetTabPinned(0, true); !ok {
+		t.Fatal("failed to pin leading tab")
+	}
+
+	var requests [][]tabview.TabListItem
+	tv.OnTabListRequested(func(items []tabview.TabListItem) {
+		requests = append(requests, append([]tabview.TabListItem(nil), items...))
+	})
+	if !tv.RequestTabList() {
+		t.Fatal("overflow tab list request was rejected")
+	}
+	if len(requests) != 1 || len(requests[0]) != 4 {
+		t.Fatalf("tab list requests = %#v", requests)
+	}
+	for index, wantID := range []string{"one", "two", "three", "four"} {
+		item := requests[0][index]
+		if item.ID != wantID || item.Index != index || item.Selected != (wantID == "four") || item.Pinned != (wantID == "one") {
+			t.Fatalf("tab list item %d = %#v", index, item)
+		}
+	}
+	if node, ok := view.AutomationLookup("sessions.overflow.list"); !ok || !node.AutomationSnapshot().Visible {
+		t.Fatal("overflow list affordance is not semantically visible")
+	}
+	if err := view.AutomationClick("sessions.overflow.list"); err != nil {
+		t.Fatalf("overflow list automation failed: %v", err)
+	}
+	if len(requests) != 2 {
+		t.Fatalf("overflow list click dispatched %d requests, want 2", len(requests))
+	}
+
+	tv.Resize(0, 0, 600, 120)
+	if tv.RequestTabList() {
+		t.Fatal("tab list request remained available without overflow")
+	}
+	if node, ok := view.AutomationLookup("sessions.overflow.list"); !ok || node.AutomationSnapshot().Visible {
+		t.Fatal("overflow list affordance remained visible after expansion")
+	}
+}
+
 func TestUITabViewMoveTabPreservesActiveIdentityAndAutomationOrder(t *testing.T) {
 	tv := tabview.NewUITabView(nil)
 	tv.SetAutomationID("sessions")

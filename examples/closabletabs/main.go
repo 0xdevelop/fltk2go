@@ -46,6 +46,26 @@ func main() {
 			status.SetText(fmt.Sprintf("Moved %s to position %d", request.ID, request.To+1))
 		}
 	})
+	tabListMenu := uikit.NewUIContextMenu(&foundation.Rect{})
+	root.AddSubview(tabListMenu)
+	tabs.OnTabListRequested(func(tabItems []uikit.TabListItem) {
+		menuItems := make([]uikit.MenuItem, 0, len(tabItems))
+		for _, tabItem := range tabItems {
+			tabItem := tabItem
+			flags := fltk_bridge.MENU_RADIO
+			if tabItem.Selected {
+				flags |= fltk_bridge.MENU_VALUE
+			}
+			menuItems = append(menuItems, uikit.MenuItem{Title: tabItem.Title, Flags: flags, Callback: func() {
+				if index := tabs.IndexOfID(tabItem.ID); index >= 0 {
+					tabs.SelectTab(index)
+					status.SetText(fmt.Sprintf("Selected %s from all tabs", tabItem.ID))
+				}
+			}})
+		}
+		tabListMenu.SetMenu(menuItems)
+		tabListMenu.Popup()
+	})
 	root.AddSubview(tabs)
 
 	pin := uikit.NewUIButton(&foundation.Rect{X: 288, Y: 64, Width: 136, Height: 32}, "Pin tab")
