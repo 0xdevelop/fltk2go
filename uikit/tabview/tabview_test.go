@@ -177,6 +177,40 @@ func TestUITabViewOverflowKeepsTabsUsableAtMinimumWidth(t *testing.T) {
 	}
 }
 
+func TestUITabViewTooltipsExposeFullTitlesAndOverflowActions(t *testing.T) {
+	tv := tabview.NewUITabView(&foundation.Rect{Width: 360, Height: 120})
+	tv.SetAutomationID("sessions")
+	tv.SetStyle(tabview.Style{MinTabWidth: 120})
+	tv.AddTabWithID("one", "Production Cluster With A Long Name", nil)
+	for _, id := range []string{"two", "three", "four"} {
+		tv.AddTabWithID(id, strings.ToUpper(id), nil)
+	}
+
+	want := map[string]string{
+		"sessions.tab.one":           "Production Cluster With A Long Name",
+		"sessions.overflow.previous": "Show previous tabs",
+		"sessions.overflow.next":     "Show next tabs",
+		"sessions.overflow.list":     "Show all tabs",
+	}
+	for id, tooltip := range want {
+		node, ok := view.AutomationLookup(id)
+		if !ok {
+			t.Fatalf("missing automation node %q", id)
+		}
+		if got := node.AutomationSnapshot().Properties["tooltip"]; got != tooltip {
+			t.Fatalf("%s tooltip = %#v, want %q", id, got, tooltip)
+		}
+	}
+
+	if !tv.SetTabTitle(0, "Renamed Production Cluster") {
+		t.Fatal("failed to rename tab")
+	}
+	node, _ := view.AutomationLookup("sessions.tab.one")
+	if got := node.AutomationSnapshot().Properties["tooltip"]; got != "Renamed Production Cluster" {
+		t.Fatalf("renamed tab tooltip = %#v", got)
+	}
+}
+
 func TestUITabViewOverflowListRequestReportsStableCompleteOrder(t *testing.T) {
 	tv := tabview.NewUITabView(&foundation.Rect{Width: 420, Height: 120})
 	tv.SetAutomationID("sessions")

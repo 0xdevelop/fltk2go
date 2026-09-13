@@ -155,6 +155,9 @@ func NewUITabView(r *foundation.Rect) *UITabView {
 	tv.overflowPrev = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, "<")
 	tv.overflowNext = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, ">")
 	tv.overflowList = button.NewUIButton(&foundation.Rect{Width: overflowButtonWidth, Height: defaultTabBarHeight - indicatorHeight}, "v")
+	tv.overflowPrev.View().SetTooltip("Show previous tabs")
+	tv.overflowNext.View().SetTooltip("Show next tabs")
+	tv.overflowList.View().SetTooltip("Show all tabs")
 	for _, control := range []*button.UIButton{tv.overflowPrev, tv.overflowNext, tv.overflowList} {
 		control.Raw().SetBox(fltk_bridge.FLAT_BOX)
 		control.SetBackgroundColor(style.BarBackground)
@@ -277,6 +280,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 	btn.Raw().SetBox(fltk_bridge.FLAT_BOX)
 	btn.Raw().SetLabelSize(tv.style.FontSize)
 	btn.SetBackgroundColor(tv.style.BarBackground)
+	btn.View().SetTooltip(title)
 	btn.View().SetAutomationRole("tab").SetAutomationProperty("tabID", id)
 	btn.OnTouchUpInside(func() {
 		if index := tv.indexOfItem(item); index >= 0 {
@@ -326,7 +330,7 @@ func (tv *UITabView) AddTabWithID(id, title string, content view.Viewable) int {
 	closeBtn.Raw().SetBox(fltk_bridge.FLAT_BOX)
 	closeBtn.Raw().SetLabelSize(tv.style.FontSize + 2)
 	closeBtn.SetBackgroundColor(tv.style.BarBackground)
-	closeBtn.Raw().SetTooltip("Close " + title)
+	closeBtn.View().SetTooltip("Close " + title)
 	closeBtn.Raw().Hide()
 	closeBtn.OnTouchUpInside(func() {
 		tv.requestTabCloseItem(item)
@@ -487,9 +491,10 @@ func (tv *UITabView) SetTabTitle(index int, title string) bool {
 	item := tv.tabs[index]
 	item.title = title
 	item.btn.SetTitle(title)
+	item.btn.View().SetTooltip(title)
 	if item.closeBtn != nil {
 		item.closeBtn.View().SetAutomationName("Close " + title)
-		item.closeBtn.Raw().SetTooltip("Close " + title)
+		item.closeBtn.View().SetTooltip("Close " + title)
 	}
 	tv.updateAutomation()
 	return true

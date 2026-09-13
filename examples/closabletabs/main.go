@@ -12,6 +12,8 @@ import (
 
 func main() {
 	runtime.LockOSThread()
+	fltk_bridge.EnableTooltips()
+	fltk_bridge.SetTooltipDelay(0.2)
 	win := uikit.NewUIWindow(760, 460, "Closable TabView Example")
 	root := win.RootView()
 
