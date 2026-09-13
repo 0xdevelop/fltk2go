@@ -133,6 +133,17 @@ func TestUITabViewOverflowKeepsTabsUsableAtMinimumWidth(t *testing.T) {
 			t.Fatalf("tab %s visibility = %t, ok=%t; want %t", id, node.AutomationSnapshot().Visible, ok, visible)
 		}
 	}
+	previous, ok := view.AutomationLookup("sessions.overflow.previous")
+	if !ok || previous.AutomationSnapshot().Enabled {
+		t.Fatalf("previous overflow control should be disabled at the leading boundary: ok=%t node=%#v", ok, previous)
+	}
+	next, ok := view.AutomationLookup("sessions.overflow.next")
+	if !ok || !next.AutomationSnapshot().Enabled {
+		t.Fatalf("next overflow control should be enabled before the trailing boundary: ok=%t node=%#v", ok, next)
+	}
+	if err := view.AutomationClick("sessions.overflow.previous"); err != view.ErrAutomationNodeUnavailable {
+		t.Fatalf("disabled previous overflow action error = %v, want unavailable", err)
+	}
 
 	// Programmatic and keyboard-driven selection must always reveal the selected
 	// identity instead of leaving focus on an off-strip tab.
@@ -143,6 +154,11 @@ func TestUITabViewOverflowKeepsTabsUsableAtMinimumWidth(t *testing.T) {
 	}
 	if node, ok := view.AutomationLookup("sessions.tab.five"); !ok || !node.AutomationSnapshot().Visible {
 		t.Fatal("selected overflow tab was not revealed")
+	}
+	previous, _ = view.AutomationLookup("sessions.overflow.previous")
+	next, _ = view.AutomationLookup("sessions.overflow.next")
+	if !previous.AutomationSnapshot().Enabled || next.AutomationSnapshot().Enabled {
+		t.Fatalf("overflow controls did not reflect trailing boundary: previous=%#v next=%#v", previous.AutomationSnapshot(), next.AutomationSnapshot())
 	}
 
 	if err := view.AutomationClick("sessions.overflow.previous"); err != nil {

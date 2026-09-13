@@ -550,6 +550,7 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 		tv.visibleStart = 0
 		tv.visibleEnd = 0
 		tv.visiblePinnedCount = 0
+		tv.setOverflowNavigationEnabled(false, false)
 		tv.overflowPrev.Raw().Hide()
 		tv.overflowNext.Raw().Hide()
 		tv.overflowList.Raw().Hide()
@@ -649,10 +650,17 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 		tv.overflowPrev.Raw().Resize(controlsX, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
 		tv.overflowNext.Raw().Resize(controlsX+overflowButtonWidth, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
 		tv.overflowList.Raw().Resize(controlsX+overflowButtonWidth*2, tv.tabBar.Y(), overflowButtonWidth, tv.tabBar.H()-indicatorHeight)
+		minStart := 0
+		if tv.visiblePinnedCount > 0 {
+			minStart = tv.visiblePinnedCount
+		}
+		maxStart := len(tv.tabs) - (tv.visibleEnd - tv.visibleStart)
+		tv.setOverflowNavigationEnabled(tv.visibleStart > minStart, tv.visibleStart < maxStart)
 		tv.overflowPrev.Raw().Show()
 		tv.overflowNext.Raw().Show()
 		tv.overflowList.Raw().Show()
 	} else {
+		tv.setOverflowNavigationEnabled(false, false)
 		tv.overflowPrev.Raw().Hide()
 		tv.overflowNext.Raw().Hide()
 		tv.overflowList.Raw().Hide()
@@ -664,6 +672,19 @@ func (tv *UITabView) layoutTabs(revealActive bool) {
 		tv.highlight.Resize(active.X(), tv.tabBar.Y()+tv.tabBar.H()-indicatorHeight, active.W(), indicatorHeight)
 	} else {
 		tv.highlight.Resize(tv.tabBar.X(), tv.tabBar.Y()+tv.tabBar.H()-indicatorHeight, 0, indicatorHeight)
+	}
+}
+
+func (tv *UITabView) setOverflowNavigationEnabled(previous, next bool) {
+	if previous {
+		tv.overflowPrev.Raw().Activate()
+	} else {
+		tv.overflowPrev.Raw().Deactivate()
+	}
+	if next {
+		tv.overflowNext.Raw().Activate()
+	} else {
+		tv.overflowNext.Raw().Deactivate()
 	}
 }
 
