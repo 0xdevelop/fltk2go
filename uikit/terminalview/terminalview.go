@@ -2,6 +2,7 @@ package terminalview
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -30,6 +31,7 @@ type KeyEvent struct {
 // disable Copy without reaching through to the native FLTK widget.
 type ContextMenuState struct {
 	HasSelection bool
+	InputEnabled bool
 }
 
 // TextMatch identifies a literal case-insensitive match in the terminal's
@@ -232,6 +234,7 @@ type UITerminalView struct {
 	onResize           func(Size)
 	lastSize           Size
 	inputBound         bool
+	inputEnabled       bool
 	shortcuts          []terminalShortcut
 	onContextMenu      func(ContextMenuState)
 	textObservers      map[uint64]func()
@@ -257,9 +260,10 @@ func NewUITerminalView(r *foundation.Rect) *UITerminalView {
 	// widgets cannot become accidental terminal children.
 	raw.End()
 	raw.SetHorizontalScrollbar(fltk_bridge.TerminalScrollbarOff)
-	t := &UITerminalView{raw: raw}
+	t := &UITerminalView{raw: raw, inputEnabled: true}
 	t.v.BindRaw(raw)
 	t.v.SetAutomationRole("terminal").SetAutomationName("Terminal")
+	t.v.SetAutomationProperty("inputEnabled", "true")
 	t.v.SetAutomationValueHandler(func() (string, bool) { return t.Text(), true })
 	t.v.On(fltk_bridge.PUSH, func(fltk_bridge.Event) bool {
 		raw.TakeFocus()
@@ -514,9 +518,39 @@ func (t *UITerminalView) CopyAllText() bool {
 // bracketed so multiline text remains an editable shell buffer instead of
 // executing line-by-line.
 func (t *UITerminalView) PasteClipboard() {
-	if t != nil && t.raw != nil {
+	if t != nil && t.raw != nil && t.inputEnabled {
 		t.raw.PasteClipboard()
 	}
+}
+
+// SetInputEnabled controls whether keyboard and paste bytes may reach OnInput.
+// Application shortcuts, selection/copy, and local scrollback navigation remain
+// available while disabled so products can provide a safe read-only session
+// mode without making the terminal unusable.
+func (t *UITerminalView) SetInputEnabled(enabled bool) {
+	if t == nil {
+		return
+	}
+	t.inputEnabled = enabled
+	t.v.SetAutomationProperty("inputEnabled", strconv.FormatBool(enabled))
+}
+
+func (t *UITerminalView) InputEnabled() bool {
+	return t != nil && t.inputEnabled
+}
+
+func (t *UITerminalView) deliverInput(data []byte) bool {
+	if t == nil || len(data) == 0 {
+		return false
+	}
+	if !t.inputEnabled {
+		return true
+	}
+	if t.onInput == nil {
+		return false
+	}
+	t.onInput(append([]byte(nil), data...))
+	return true
 }
 
 func (t *UITerminalView) preparePaste(data []byte) []byte {
@@ -675,7 +709,7 @@ func (t *UITerminalView) dispatchContextMenu(button fltk_bridge.MouseButton) boo
 	if t == nil || t.onContextMenu == nil || button != fltk_bridge.RightMouse {
 		return false
 	}
-	t.onContextMenu(ContextMenuState{HasSelection: t.HasSelection()})
+	t.onContextMenu(ContextMenuState{HasSelection: t.HasSelection(), InputEnabled: t.InputEnabled()})
 	return true
 }
 
@@ -732,18 +766,16 @@ func (t *UITerminalView) OnInput(handler func([]byte)) {
 			return true
 		}
 		data, handled := EncodeKey(event)
-		if !handled || len(data) == 0 || t.onInput == nil {
+		if !handled || len(data) == 0 {
 			return false
 		}
-		t.onInput(append([]byte(nil), data...))
-		return true
+		return t.deliverInput(data)
 	})
 	t.v.On(fltk_bridge.PASTE, func(fltk_bridge.Event) bool {
-		if t.onInput == nil || fltk_bridge.EventText() == "" {
+		if fltk_bridge.EventText() == "" {
 			return false
 		}
-		t.onInput(t.preparePaste([]byte(fltk_bridge.EventText())))
-		return true
+		return t.deliverInput(t.preparePaste([]byte(fltk_bridge.EventText())))
 	})
 }
 

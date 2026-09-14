@@ -287,6 +287,34 @@ func TestTerminalShortcutCommandsRunBeforePTYInput(t *testing.T) {
 	}
 }
 
+func TestTerminalInputEnabledDefaultsOnAndSuppressesTransportInputWhenDisabled(t *testing.T) {
+	terminal := NewUITerminalView(nil)
+	var input []byte
+	terminal.OnInput(func(data []byte) { input = append(input, data...) })
+
+	if !terminal.InputEnabled() {
+		t.Fatal("new terminal input must be enabled")
+	}
+	if got := terminal.View().AutomationSnapshot().Properties["inputEnabled"]; got != "true" {
+		t.Fatalf("default semantic input state = %q, want true", got)
+	}
+	terminal.SetInputEnabled(false)
+	if terminal.InputEnabled() {
+		t.Fatal("disabled terminal still reports input enabled")
+	}
+	if !terminal.deliverInput([]byte("blocked")) || len(input) != 0 {
+		t.Fatalf("disabled terminal input was not consumed safely: %q", input)
+	}
+	if got := terminal.View().AutomationSnapshot().Properties["inputEnabled"]; got != "false" {
+		t.Fatalf("disabled semantic input state = %q, want false", got)
+	}
+
+	terminal.SetInputEnabled(true)
+	if !terminal.deliverInput([]byte("allowed")) || string(input) != "allowed" {
+		t.Fatalf("re-enabled terminal input = %q, want allowed", input)
+	}
+}
+
 func TestTerminalContextMenuOnlyConsumesRightMousePush(t *testing.T) {
 	terminal := NewUITerminalView(nil)
 	invocations := 0
