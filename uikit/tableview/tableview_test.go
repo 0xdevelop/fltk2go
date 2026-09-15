@@ -155,6 +155,44 @@ func TestDoubleClickActivatesSelectedRowAfterSelection(t *testing.T) {
 	}
 }
 
+func TestRightClickRequestsContextMenuWithoutActivatingRow(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: -1}
+	tv := newWithBridgeTable(bridge)
+	tv.SetDataSource(&sliceDataSource{rows: 3})
+	delegate := &recordingDelegate{}
+	tv.SetDelegate(delegate)
+	var requested []TableContextMenuState
+	activated := -1
+	tv.OnContextMenu(func(state TableContextMenuState) { requested = append(requested, state) })
+	tv.OnActivate(func(row int) { activated = row })
+
+	if !bridge.event(TableInteraction{Row: 2, Button: fltk_bridge.RightMouse, Clicks: 1}) {
+		t.Fatal("right-click interaction was not handled")
+	}
+	if len(requested) != 1 || requested[0].Row != 2 || requested[0].Selected {
+		t.Fatalf("context-menu requests = %#v, want row 2 previously unselected", requested)
+	}
+	if activated != -1 {
+		t.Fatalf("right click activated row %d", activated)
+	}
+	if len(delegate.selected) != 1 || delegate.selected[0] != 2 {
+		t.Fatalf("right click did not select its row: %#v", delegate.selected)
+	}
+}
+
+func TestTableContextMenuRequiresHandlerAndValidRow(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: 0}
+	tv := newWithBridgeTable(bridge)
+	tv.SetDataSource(&sliceDataSource{rows: 1})
+	if bridge.event(TableInteraction{Row: 0, Button: fltk_bridge.RightMouse}) {
+		t.Fatal("right click without an owner handler was consumed")
+	}
+	tv.OnContextMenu(func(TableContextMenuState) {})
+	if bridge.event(TableInteraction{Row: 1, Button: fltk_bridge.RightMouse}) {
+		t.Fatal("out-of-range right click was consumed")
+	}
+}
+
 func TestSelectRowClampsAndPublishesSemanticValue(t *testing.T) {
 	bridge := &fakeBridgeTable{selected: -1}
 	tv := newWithBridgeTable(bridge)

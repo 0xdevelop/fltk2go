@@ -16,15 +16,25 @@ type TableColumn struct {
 	Align      fltk_bridge.Align
 }
 
+// TableContextMenuState identifies the data row that received a native
+// right-click. Selected reports whether it was already selected before the
+// request; TableView selects and publishes the clicked row before invoking the
+// owner callback so menu actions have one deterministic target.
+type TableContextMenuState struct {
+	Row      int
+	Selected bool
+}
+
 type TableView struct {
 	table      BridgeTable
 	v          view.UIView
 	customDraw func(ctx fltk_bridge.TableContext, row, col, x, y, w, h int)
 
-	dataSource  DataSource
-	delegate    Delegate
-	onActivate  func(row int)
-	selectedRow int
+	dataSource    DataSource
+	delegate      Delegate
+	onActivate    func(row int)
+	onContextMenu func(TableContextMenuState)
+	selectedRow   int
 
 	columns []TableColumn
 
@@ -190,6 +200,15 @@ func (tv *TableView) OnActivate(handler func(row int)) {
 		tv.ActivateSelected()
 		return nil
 	})
+}
+
+// OnContextMenu registers an application-owned menu request for native
+// right-clicks on data rows. The table owns hit-testing and row selection while
+// the application owns labels, enablement, and actions.
+func (tv *TableView) OnContextMenu(handler func(TableContextMenuState)) {
+	if tv != nil {
+		tv.onContextMenu = handler
+	}
 }
 
 // ActivateSelected invokes the primary action for the selected row.
@@ -379,9 +398,19 @@ func (tv *TableView) onEvent(interaction TableInteraction) bool {
 	if tv == nil || interaction.Row < 0 {
 		return false
 	}
+	if interaction.Button == fltk_bridge.RightMouse {
+		if tv.onContextMenu == nil || tv.dataSource == nil || interaction.Row >= tv.dataSource.NumberOfRows(tv) {
+			return false
+		}
+	}
+	selected := tv.GetSelectedRow() == interaction.Row
 	tv.selectedRow = interaction.Row
 	if tv.delegate != nil {
 		tv.delegate.DidSelectRow(tv, interaction.Row)
+	}
+	if interaction.Button == fltk_bridge.RightMouse {
+		tv.onContextMenu(TableContextMenuState{Row: interaction.Row, Selected: selected})
+		return true
 	}
 	if interaction.Clicks > 0 && tv.onActivate != nil {
 		tv.onActivate(interaction.Row)

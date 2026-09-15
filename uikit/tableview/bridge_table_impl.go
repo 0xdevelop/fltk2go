@@ -40,7 +40,7 @@ func newBridgeTableImpl(x, y, w, h int) *bridgeTableImpl {
 	table.SetCallback(func() {
 		if bt.eventHandler != nil {
 			row := table.CallbackRow()
-			bt.eventHandler(TableInteraction{Row: row, Clicks: fltk_bridge.EventClicks()})
+			bt.eventHandler(TableInteraction{Row: row, Clicks: fltk_bridge.EventClicks(), Button: fltk_bridge.EventButton()})
 		}
 	})
 

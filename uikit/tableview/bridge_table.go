@@ -7,6 +7,7 @@ import "github.com/0xdevelop/fltk2go/fltk_bridge"
 type TableInteraction struct {
 	Row    int
 	Clicks int
+	Button fltk_bridge.MouseButton
 }
 
 // BridgeTable is the minimal interface TableView needs from the underlying FLTK table.
