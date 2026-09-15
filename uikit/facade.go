@@ -36,6 +36,7 @@ type InputType = input.InputType
 type InputNavigationAction = input.NavigationAction
 type UITableView = tableview.TableView
 type UITableViewCell = tableview.TableViewCell
+type TableContextMenuState = tableview.TableContextMenuState
 type TableViewDataSource = tableview.DataSource
 type TableViewDelegate = tableview.Delegate
 type UITabView = tabview.UITabView
