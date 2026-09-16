@@ -30,12 +30,13 @@ type TableView struct {
 	v          view.UIView
 	customDraw func(ctx fltk_bridge.TableContext, row, col, x, y, w, h int)
 
-	dataSource    DataSource
-	delegate      Delegate
-	onActivate    func(row int)
-	onContextMenu func(TableContextMenuState)
-	onHeaderClick func(column int)
-	selectedRow   int
+	dataSource        DataSource
+	delegate          Delegate
+	onActivate        func(row int)
+	onContextMenu     func(TableContextMenuState)
+	onHeaderClick     func(column int)
+	headerClickActive bool
+	selectedRow       int
 
 	columns []TableColumn
 
@@ -412,6 +413,11 @@ func (tv *TableView) onEvent(interaction TableInteraction) bool {
 		if interaction.Button == fltk_bridge.RightMouse || interaction.Column < 0 || interaction.Column >= len(tv.columns) || tv.onHeaderClick == nil {
 			return false
 		}
+		if tv.headerClickActive {
+			return true
+		}
+		tv.headerClickActive = true
+		defer func() { tv.headerClickActive = false }()
 		tv.onHeaderClick(interaction.Column)
 		return true
 	}

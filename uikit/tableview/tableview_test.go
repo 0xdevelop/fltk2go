@@ -232,6 +232,25 @@ func TestColumnHeaderClickRejectsMissingHandlerInvalidColumnAndRightClick(t *tes
 	}
 }
 
+func TestColumnHeaderClickSuppressesReentrantNativeCallbacks(t *testing.T) {
+	bridge := &fakeBridgeTable{}
+	tv := newWithBridgeTable(bridge)
+	tv.AddColumn(TableColumn{Identifier: "name"})
+	calls := 0
+	tv.OnColumnHeaderClick(func(column int) {
+		calls++
+		if calls == 1 {
+			bridge.event(TableInteraction{Context: fltk_bridge.ContextColHeader, Row: -1, Column: column})
+		}
+	})
+	if !bridge.event(TableInteraction{Context: fltk_bridge.ContextColHeader, Row: -1, Column: 0}) {
+		t.Fatal("outer header click was not handled")
+	}
+	if calls != 1 {
+		t.Fatalf("reentrant header callbacks = %d, want 1", calls)
+	}
+}
+
 func TestSelectRowClampsAndPublishesSemanticValue(t *testing.T) {
 	bridge := &fakeBridgeTable{selected: -1}
 	tv := newWithBridgeTable(bridge)
