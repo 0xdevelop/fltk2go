@@ -193,6 +193,45 @@ func TestTableContextMenuRequiresHandlerAndValidRow(t *testing.T) {
 	}
 }
 
+func TestColumnHeaderClickPublishesColumnWithoutChangingSelection(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: 1}
+	tv := newWithBridgeTable(bridge)
+	tv.SetDataSource(&sliceDataSource{rows: 3})
+	for index := 0; index < 3; index++ {
+		tv.AddColumn(TableColumn{Identifier: string(rune('a' + index))})
+	}
+	delegate := &recordingDelegate{}
+	tv.SetDelegate(delegate)
+	var columns []int
+	tv.OnColumnHeaderClick(func(column int) { columns = append(columns, column) })
+
+	if !bridge.event(TableInteraction{Context: fltk_bridge.ContextColHeader, Row: -1, Column: 2, Button: fltk_bridge.LeftMouse}) {
+		t.Fatal("column-header click was not handled")
+	}
+	if len(columns) != 1 || columns[0] != 2 {
+		t.Fatalf("header callbacks = %#v, want [2]", columns)
+	}
+	if bridge.selected != 1 || len(delegate.selected) != 0 {
+		t.Fatalf("header click changed row selection: native=%d callbacks=%#v", bridge.selected, delegate.selected)
+	}
+}
+
+func TestColumnHeaderClickRejectsMissingHandlerInvalidColumnAndRightClick(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: 0}
+	tv := newWithBridgeTable(bridge)
+	tv.AddColumn(TableColumn{Identifier: "name"})
+	if bridge.event(TableInteraction{Context: fltk_bridge.ContextColHeader, Row: -1, Column: 0}) {
+		t.Fatal("header click without a handler was consumed")
+	}
+	tv.OnColumnHeaderClick(func(int) {})
+	if bridge.event(TableInteraction{Context: fltk_bridge.ContextColHeader, Row: -1, Column: -1}) {
+		t.Fatal("invalid header column was consumed")
+	}
+	if bridge.event(TableInteraction{Context: fltk_bridge.ContextColHeader, Row: -1, Column: 0, Button: fltk_bridge.RightMouse}) {
+		t.Fatal("right-click header was treated as primary sorting action")
+	}
+}
+
 func TestSelectRowClampsAndPublishesSemanticValue(t *testing.T) {
 	bridge := &fakeBridgeTable{selected: -1}
 	tv := newWithBridgeTable(bridge)

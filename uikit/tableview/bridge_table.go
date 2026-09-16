@@ -5,9 +5,11 @@ import "github.com/0xdevelop/fltk2go/fltk_bridge"
 // TableInteraction describes a native table selection callback. FLTK reports
 // Clicks=1 for a double click (the number of clicks after the first one).
 type TableInteraction struct {
-	Row    int
-	Clicks int
-	Button fltk_bridge.MouseButton
+	Context fltk_bridge.TableContext
+	Row     int
+	Column  int
+	Clicks  int
+	Button  fltk_bridge.MouseButton
 }
 
 // BridgeTable is the minimal interface TableView needs from the underlying FLTK table.

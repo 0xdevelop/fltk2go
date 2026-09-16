@@ -34,6 +34,7 @@ type TableView struct {
 	delegate      Delegate
 	onActivate    func(row int)
 	onContextMenu func(TableContextMenuState)
+	onHeaderClick func(column int)
 	selectedRow   int
 
 	columns []TableColumn
@@ -208,6 +209,15 @@ func (tv *TableView) OnActivate(handler func(row int)) {
 func (tv *TableView) OnContextMenu(handler func(TableContextMenuState)) {
 	if tv != nil {
 		tv.onContextMenu = handler
+	}
+}
+
+// OnColumnHeaderClick registers a primary-click callback for column headers.
+// Header interaction never changes the selected data row; consumers can use
+// the stable zero-based column index to implement sorting or filtering.
+func (tv *TableView) OnColumnHeaderClick(handler func(column int)) {
+	if tv != nil {
+		tv.onHeaderClick = handler
 	}
 }
 
@@ -395,7 +405,17 @@ func (tv *TableView) cellFor(row, col int) *TableViewCell {
 }
 
 func (tv *TableView) onEvent(interaction TableInteraction) bool {
-	if tv == nil || interaction.Row < 0 {
+	if tv == nil {
+		return false
+	}
+	if interaction.Context == fltk_bridge.ContextColHeader {
+		if interaction.Button == fltk_bridge.RightMouse || interaction.Column < 0 || interaction.Column >= len(tv.columns) || tv.onHeaderClick == nil {
+			return false
+		}
+		tv.onHeaderClick(interaction.Column)
+		return true
+	}
+	if interaction.Row < 0 {
 		return false
 	}
 	if interaction.Button == fltk_bridge.RightMouse {

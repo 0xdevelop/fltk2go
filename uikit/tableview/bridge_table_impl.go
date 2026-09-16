@@ -39,8 +39,13 @@ func newBridgeTableImpl(x, y, w, h int) *bridgeTableImpl {
 	// 设置 FLTK TableRow 的事件回调
 	table.SetCallback(func() {
 		if bt.eventHandler != nil {
-			row := table.CallbackRow()
-			bt.eventHandler(TableInteraction{Row: row, Clicks: fltk_bridge.EventClicks(), Button: fltk_bridge.EventButton()})
+			bt.eventHandler(TableInteraction{
+				Context: table.CallbackContext(),
+				Row:     table.CallbackRow(),
+				Column:  table.CallbackColumn(),
+				Clicks:  fltk_bridge.EventClicks(),
+				Button:  fltk_bridge.EventButton(),
+			})
 		}
 	})
 
