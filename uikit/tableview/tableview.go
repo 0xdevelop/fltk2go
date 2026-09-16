@@ -413,6 +413,9 @@ func (tv *TableView) onEvent(interaction TableInteraction) bool {
 		if interaction.Button == fltk_bridge.RightMouse || interaction.Column < 0 || interaction.Column >= len(tv.columns) || tv.onHeaderClick == nil {
 			return false
 		}
+		if interaction.Event != fltk_bridge.NO_EVENT && interaction.Event != fltk_bridge.PUSH {
+			return true
+		}
 		if tv.headerClickActive {
 			return true
 		}

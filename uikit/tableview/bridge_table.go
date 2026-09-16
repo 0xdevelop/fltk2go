@@ -6,6 +6,7 @@ import "github.com/0xdevelop/fltk2go/fltk_bridge"
 // Clicks=1 for a double click (the number of clicks after the first one).
 type TableInteraction struct {
 	Context fltk_bridge.TableContext
+	Event   fltk_bridge.Event
 	Row     int
 	Column  int
 	Clicks  int

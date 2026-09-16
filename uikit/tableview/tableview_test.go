@@ -251,6 +251,22 @@ func TestColumnHeaderClickSuppressesReentrantNativeCallbacks(t *testing.T) {
 	}
 }
 
+func TestColumnHeaderClickIgnoresReleaseAfterPush(t *testing.T) {
+	bridge := &fakeBridgeTable{}
+	tv := newWithBridgeTable(bridge)
+	tv.AddColumn(TableColumn{Identifier: "name"})
+	calls := 0
+	tv.OnColumnHeaderClick(func(int) { calls++ })
+	for _, event := range []fltk_bridge.Event{fltk_bridge.PUSH, fltk_bridge.RELEASE} {
+		if !bridge.event(TableInteraction{Context: fltk_bridge.ContextColHeader, Event: event, Row: -1, Column: 0}) {
+			t.Fatalf("header event %v was not consumed", event)
+		}
+	}
+	if calls != 1 {
+		t.Fatalf("push/release header callbacks = %d, want 1", calls)
+	}
+}
+
 func TestSelectRowClampsAndPublishesSemanticValue(t *testing.T) {
 	bridge := &fakeBridgeTable{selected: -1}
 	tv := newWithBridgeTable(bridge)
