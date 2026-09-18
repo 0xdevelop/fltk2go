@@ -309,6 +309,36 @@ func TestKeyboardNavigationAndActivation(t *testing.T) {
 	}
 }
 
+func TestOwnerKeyboardHandlerRunsBeforeBuiltInNavigation(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: 1}
+	tv := newWithBridgeTable(bridge)
+	tv.SetDataSource(&sliceDataSource{rows: 3})
+	var events []TableKeyEvent
+	tv.OnKey(func(event TableKeyEvent) bool {
+		events = append(events, event)
+		return event.Key == ' '
+	})
+
+	space := TableKeyEvent{Key: ' ', Text: " ", State: fltk_bridge.SHIFT}
+	if !tv.handleKeyEvent(space) {
+		t.Fatal("owner-handled Space was not consumed")
+	}
+	if bridge.selected != 1 {
+		t.Fatalf("owner-handled key changed selection to %d", bridge.selected)
+	}
+	if !tv.handleKeyEvent(TableKeyEvent{Key: fltk_bridge.DOWN}) || bridge.selected != 2 {
+		t.Fatalf("unhandled Down did not use built-in navigation: selected=%d", bridge.selected)
+	}
+	if len(events) != 2 || events[0] != space || events[1].Key != fltk_bridge.DOWN {
+		t.Fatalf("owner key events = %#v", events)
+	}
+
+	tv.OnKey(nil)
+	if tv.handleKeyEvent(TableKeyEvent{Key: 'x'}) {
+		t.Fatal("cleared owner handler still consumed an unknown key")
+	}
+}
+
 func TestTableViewNilSafety(t *testing.T) {
 	var tv *TableView
 	tv.SetDataSource(nil)

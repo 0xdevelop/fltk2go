@@ -25,6 +25,14 @@ type TableContextMenuState struct {
 	Selected bool
 }
 
+// TableKeyEvent is the native keyboard state offered to an owner before the
+// table applies its built-in Enter and selection-navigation behavior.
+type TableKeyEvent struct {
+	Key   int
+	Text  string
+	State int
+}
+
 type TableView struct {
 	table      BridgeTable
 	v          view.UIView
@@ -35,6 +43,7 @@ type TableView struct {
 	onActivate        func(row int)
 	onContextMenu     func(TableContextMenuState)
 	onHeaderClick     func(column int)
+	onKey             func(TableKeyEvent) bool
 	headerClickActive bool
 	selectedRow       int
 
@@ -78,7 +87,9 @@ func newWithBridgeTable(bt BridgeTable) *TableView {
 		return strconv.Itoa(tv.GetSelectedRow()), true
 	})
 	tv.v.On(fltk_bridge.KEYDOWN, func(fltk_bridge.Event) bool {
-		return tv.handleKey(fltk_bridge.EventKey())
+		return tv.handleKeyEvent(TableKeyEvent{
+			Key: fltk_bridge.EventKey(), Text: fltk_bridge.EventText(), State: fltk_bridge.EventState(),
+		})
 	})
 
 	return tv
@@ -222,6 +233,15 @@ func (tv *TableView) OnColumnHeaderClick(handler func(column int)) {
 	}
 }
 
+// OnKey registers an owner keyboard policy. The handler runs before built-in
+// table navigation and should return true only when it consumes the event.
+// This lets products add row commands while preserving native navigation.
+func (tv *TableView) OnKey(handler func(TableKeyEvent) bool) {
+	if tv != nil {
+		tv.onKey = handler
+	}
+}
+
 // ActivateSelected invokes the primary action for the selected row.
 func (tv *TableView) ActivateSelected() bool {
 	if tv == nil || tv.onActivate == nil {
@@ -236,6 +256,13 @@ func (tv *TableView) ActivateSelected() bool {
 }
 
 func (tv *TableView) handleKey(key int) bool {
+	return tv.handleKeyEvent(TableKeyEvent{Key: key})
+}
+
+func (tv *TableView) handleKeyEvent(event TableKeyEvent) bool {
+	if tv != nil && tv.onKey != nil && tv.onKey(event) {
+		return true
+	}
 	if tv == nil || tv.dataSource == nil {
 		return false
 	}
@@ -244,7 +271,7 @@ func (tv *TableView) handleKey(key int) bool {
 		return false
 	}
 	selected := tv.GetSelectedRow()
-	switch key {
+	switch event.Key {
 	case fltk_bridge.ENTER_KEY:
 		return tv.ActivateSelected()
 	case fltk_bridge.UP:
