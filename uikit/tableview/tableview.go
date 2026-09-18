@@ -458,6 +458,11 @@ func (tv *TableView) onEvent(interaction TableInteraction) bool {
 		if tv.onContextMenu == nil || tv.dataSource == nil || interaction.Row >= tv.dataSource.NumberOfRows(tv) {
 			return false
 		}
+	} else if tv.table != nil {
+		// A native row click selects data but FLTK does not reliably transfer
+		// keyboard focus to Fl_Table_Row. Claim it explicitly so owner key
+		// handlers and built-in row navigation work immediately after a click.
+		tv.table.TakeFocus()
 	}
 	selected := tv.GetSelectedRow() == interaction.Row
 	tv.selectedRow = interaction.Row

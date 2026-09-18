@@ -14,6 +14,7 @@ type fakeBridgeTable struct {
 	event      func(TableInteraction) bool
 	selected   int
 	scrolled   int
+	focuses    int
 }
 
 func (f *fakeBridgeTable) SetRows(rows int) { f.rows = rows }
@@ -25,6 +26,7 @@ func (f *fakeBridgeTable) SetEventHandler(fn func(TableInteraction) bool) { f.ev
 func (f *fakeBridgeTable) GetSelectedRow() int                            { return f.selected }
 func (f *fakeBridgeTable) SelectRow(row int)                              { f.selected = row }
 func (f *fakeBridgeTable) ScrollToRow(row int)                            { f.scrolled = row }
+func (f *fakeBridgeTable) TakeFocus() bool                                { f.focuses++; return true }
 func (f *fakeBridgeTable) Widget() fltk_bridge.Widget                     { return nil }
 func (f *fakeBridgeTable) SetColumnCount(int)                             {}
 func (f *fakeBridgeTable) SetColumnWidth(int, int)                        {}
@@ -48,6 +50,25 @@ func TestNativeSelectionGeometryUsesZeroBasedDataIndex(t *testing.T) {
 		if got := normalizeSelectedRow(raw); got != want {
 			t.Fatalf("normalizeSelectedRow(%d) = %d, want %d", raw, got, want)
 		}
+	}
+}
+
+func TestNativeRowInteractionTakesKeyboardFocus(t *testing.T) {
+	bridge := &fakeBridgeTable{}
+	tv := newWithBridgeTable(bridge)
+	tv.SetDataSource(&sliceDataSource{rows: 1})
+	tv.SetDelegate(&recordingDelegate{})
+
+	if !tv.onEvent(TableInteraction{Context: fltk_bridge.ContextCell, Event: fltk_bridge.RELEASE, Row: 0, Button: fltk_bridge.LeftMouse}) {
+		t.Fatal("row interaction was not handled")
+	}
+	if bridge.focuses != 1 {
+		t.Fatalf("row interaction requested focus %d times, want 1", bridge.focuses)
+	}
+
+	tv.onEvent(TableInteraction{Context: fltk_bridge.ContextCell, Event: fltk_bridge.RELEASE, Row: 0, Button: fltk_bridge.RightMouse})
+	if bridge.focuses != 1 {
+		t.Fatalf("right-click changed keyboard focus count to %d", bridge.focuses)
 	}
 }
 

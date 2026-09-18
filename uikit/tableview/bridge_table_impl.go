@@ -109,6 +109,10 @@ func (bt *bridgeTableImpl) ScrollToRow(row int) {
 	bt.table.SetTopRow(row + 1) // +1: FLTK row 0 is the column header
 }
 
+func (bt *bridgeTableImpl) TakeFocus() bool {
+	return bt != nil && bt.table != nil && bt.table.TakeFocus() != 0
+}
+
 // InsertRow 插入一行
 func (bt *bridgeTableImpl) InsertRow(row int) {
 	// 插入一行的逻辑

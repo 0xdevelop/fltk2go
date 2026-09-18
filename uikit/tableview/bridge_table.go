@@ -22,6 +22,7 @@ type BridgeTable interface {
 	GetSelectedRow() int
 	SelectRow(row int)
 	ScrollToRow(row int)
+	TakeFocus() bool
 	Widget() fltk_bridge.Widget
 
 	SetColumnCount(cols int)
