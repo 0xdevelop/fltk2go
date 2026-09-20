@@ -85,6 +85,7 @@ func TestInputNavigationMapsNativeSearchKeys(t *testing.T) {
 		{key: fltk_bridge.DOWN, want: NavigationNext, handled: true},
 		{key: fltk_bridge.UP, want: NavigationPrevious, handled: true},
 		{key: fltk_bridge.ESCAPE, want: NavigationCancel, handled: false},
+		{key: fltk_bridge.F1, want: NavigationHelp, handled: true},
 	}
 	for _, test := range tests {
 		if got := in.dispatchNavigation(test.key, 0); got != test.handled {

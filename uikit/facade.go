@@ -85,6 +85,7 @@ const (
 	InputNavigationNext     = input.NavigationNext
 	InputNavigationPrevious = input.NavigationPrevious
 	InputNavigationCancel   = input.NavigationCancel
+	InputNavigationHelp     = input.NavigationHelp
 
 	AxisVertical   = stackview.AxisVertical
 	AxisHorizontal = stackview.AxisHorizontal

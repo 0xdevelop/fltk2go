@@ -27,6 +27,7 @@ const (
 	NavigationNext
 	NavigationPrevious
 	NavigationCancel
+	NavigationHelp
 )
 
 // InputType 输入框类型
@@ -212,10 +213,11 @@ func (in *Input) OnChange(callback func()) {
 	}
 }
 
-// OnNavigation routes Enter, Down, Up, Escape, F3 and Shift+F3 through one
-// native-input callback. F3 follows the conventional find-again direction:
-// next without Shift and previous with Shift. Return true when the owner handled
-// the command, or false to let the underlying input retain its normal behavior.
+// OnNavigation routes Enter, Down, Up, Escape, F1, F3 and Shift+F3 through one
+// native-input callback. F1 lets a focused search field request contextual help.
+// F3 follows the conventional find-again direction: next without Shift and
+// previous with Shift. Return true when the owner handled the command, or false
+// to let the underlying input retain its normal behavior.
 func (in *Input) OnNavigation(callback func(NavigationAction) bool) {
 	if in == nil {
 		return
@@ -240,6 +242,8 @@ func (in *Input) dispatchNavigation(key, state int) bool {
 		action = NavigationPrevious
 	case fltk_bridge.ESCAPE:
 		action = NavigationCancel
+	case fltk_bridge.F1:
+		action = NavigationHelp
 	case fltk_bridge.F3:
 		if state&fltk_bridge.SHIFT != 0 {
 			action = NavigationPrevious
