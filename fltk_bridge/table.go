@@ -164,6 +164,7 @@ var (
 	ContextCell      = TableContext(C.go_FL_CONTEXT_CELL)
 	ContextTable     = TableContext(C.go_FL_CONTEXT_TABLE)
 	ContextRCResize  = TableContext(C.go_FL_CONTEXT_RC_RESIZE)
+	ContextEmpty     = TableContext(C.go_FL_CONTEXT_EMPTY)
 )
 
 func NewTableRow(x, y, w, h int) *TableRow {

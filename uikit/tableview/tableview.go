@@ -191,13 +191,13 @@ func (tv *TableView) emptyMessageForDrawing() string {
 
 func (tv *TableView) drawEmptyMessage(x, y, w, h int) {
 	message := tv.emptyMessageForDrawing()
-	if message == "" || w <= 0 || h <= tv.headerHeight {
+	if message == "" || w <= 0 || h <= 0 {
 		return
 	}
-	fltk_bridge.PushClip(x, y+tv.headerHeight, w, h-tv.headerHeight)
+	fltk_bridge.PushClip(x, y, w, h)
 	fltk_bridge.SetDrawColor(fltk_bridge.Color(0x7A849300))
 	fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA, 14)
-	fltk_bridge.Draw(message, x+16, y+tv.headerHeight, w-32, h-tv.headerHeight, fltk_bridge.ALIGN_CENTER|fltk_bridge.ALIGN_CLIP)
+	fltk_bridge.Draw(message, x+16, y, w-32, h, fltk_bridge.ALIGN_CENTER|fltk_bridge.ALIGN_CLIP)
 	fltk_bridge.PopClip()
 }
 
@@ -381,11 +381,12 @@ func (tv *TableView) onDrawCell(ctx fltk_bridge.TableContext, row, col int, x, y
 	if tv == nil {
 		return
 	}
+	if ctx == fltk_bridge.ContextEmpty {
+		tv.drawEmptyMessage(x, y, w, h)
+		return
+	}
 	if tv.customDraw != nil {
 		tv.customDraw(ctx, row, col, x, y, w, h)
-		if ctx == fltk_bridge.ContextStartPage {
-			tv.drawEmptyMessage(x, y, w, h)
-		}
 		return
 	}
 
@@ -393,7 +394,6 @@ func (tv *TableView) onDrawCell(ctx fltk_bridge.TableContext, row, col int, x, y
 	case fltk_bridge.ContextStartPage:
 		fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA, 14)
 		tv.drawnInPage = make(map[string]bool)
-		tv.drawEmptyMessage(x, y, w, h)
 	case fltk_bridge.ContextEndPage:
 		// Cleanup invisible cells to prevent memory leak and allow reuse
 		for key, cell := range tv.visible {

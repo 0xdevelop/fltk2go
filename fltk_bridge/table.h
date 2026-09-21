@@ -54,6 +54,7 @@ extern "C" {
   extern const int go_FL_CONTEXT_CELL;
   extern const int go_FL_CONTEXT_TABLE;
   extern const int go_FL_CONTEXT_RC_RESIZE;
+  extern const int go_FL_CONTEXT_EMPTY;
 
   extern const int go_FL_SELECT_NONE;
   extern const int go_FL_SELECT_SINGLE;

@@ -21,6 +21,15 @@ public:
     }
   }
 
+  void draw() final {
+    Fl_Table_Row::draw();
+    if (m_drawFunId > 0 && rows() == 0) {
+      const int header = col_header() ? col_header_height() : 0;
+      _go_drawTableHandler(m_drawFunId, go_FL_CONTEXT_EMPTY, -1, -1,
+                           x(), y() + header, w(), h() - header);
+    }
+  }
+
   int find_cell_(int ctx, int r, int c, int *x, int *y, int *w, int *h) {
     int X = 0, Y = 0, W = 0, H = 0;
     int ret = this->find_cell((Fl_Table::TableContext)ctx, r, c, X, Y, W, H);
@@ -164,6 +173,7 @@ const int go_FL_CONTEXT_COL_HEADER = (int)Fl_Table::CONTEXT_COL_HEADER;
 const int go_FL_CONTEXT_CELL = (int)Fl_Table::CONTEXT_CELL;
 const int go_FL_CONTEXT_TABLE = (int)Fl_Table::CONTEXT_TABLE;
 const int go_FL_CONTEXT_RC_RESIZE = (int)Fl_Table::CONTEXT_RC_RESIZE;
+const int go_FL_CONTEXT_EMPTY = 1000;
 
 const int go_FL_SELECT_NONE = (int)Fl_Table_Row::SELECT_NONE;
 const int go_FL_SELECT_SINGLE = (int)Fl_Table_Row::SELECT_SINGLE;
