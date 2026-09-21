@@ -79,6 +79,7 @@ func BuildView(parent *view.UIView) view.Viewable {
 
 	tv.SetDataSource(dataSource)
 	tv.SetDelegate(delegate)
+	tv.SetEmptyMessage("No servers to display")
 
 	addBtn := button.NewUIButton(&foundation.Rect{X: 50, Y: 500, Width: 120, Height: 36}, "Add Server")
 	addBtn.SetBackgroundColor(BLUE)

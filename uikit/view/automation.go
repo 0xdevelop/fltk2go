@@ -125,6 +125,16 @@ func (v *UIView) SetAutomationProperty(key, value string) *UIView {
 	return v
 }
 
+// ClearAutomationProperty removes dynamic semantic metadata that no longer
+// describes the native control. It remains chainable like the other helpers.
+func (v *UIView) ClearAutomationProperty(key string) *UIView {
+	if v == nil || key == "" {
+		return v
+	}
+	delete(v.automation.props, key)
+	return v
+}
+
 func (v *UIView) OnAutomationClick(handler func() error) *UIView {
 	if v != nil {
 		v.automation.click = handler

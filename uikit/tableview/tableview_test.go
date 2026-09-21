@@ -45,6 +45,34 @@ func TestSetBackgroundColorForwardsToBridge(t *testing.T) {
 	}
 }
 
+func TestEmptyMessagePublishesSemanticStateAndTracksRows(t *testing.T) {
+	bridge := &fakeBridgeTable{}
+	tv := newWithBridgeTable(bridge)
+	ds := &sliceDataSource{}
+	tv.SetDataSource(ds)
+
+	tv.SetEmptyMessage("No matching connections")
+	if got := tv.View().AutomationSnapshot().Properties["emptyMessage"]; got != "No matching connections" {
+		t.Fatalf("empty message automation property = %#v", got)
+	}
+	if got := tv.emptyMessageForDrawing(); got != "No matching connections" {
+		t.Fatalf("empty message for zero rows = %q", got)
+	}
+	if bridge.redraws != 1 {
+		t.Fatalf("setting empty message redrew %d times, want 1", bridge.redraws)
+	}
+
+	ds.rows = 1
+	if got := tv.emptyMessageForDrawing(); got != "" {
+		t.Fatalf("non-empty table drew empty message %q", got)
+	}
+
+	tv.SetEmptyMessage("")
+	if _, ok := tv.View().AutomationSnapshot().Properties["emptyMessage"]; ok {
+		t.Fatal("cleared empty message remains in automation metadata")
+	}
+}
+
 func TestNativeSelectionGeometryUsesZeroBasedDataIndex(t *testing.T) {
 	for raw, want := range map[int]int{-1: -1, 0: 0, 2: 2} {
 		if got := normalizeSelectedRow(raw); got != want {

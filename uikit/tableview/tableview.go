@@ -3,6 +3,7 @@ package tableview
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/0xdevelop/fltk2go/fltk_bridge"
 	"github.com/0xdevelop/fltk2go/uikit/textlayout"
@@ -51,6 +52,7 @@ type TableView struct {
 
 	defaultRowHeight int
 	headerHeight     int
+	emptyMessage     string
 
 	reusePool   map[string][]*TableViewCell
 	visible     map[string]*TableViewCell
@@ -161,6 +163,42 @@ func (tv *TableView) SetBackgroundColor(color fltk_bridge.Color) {
 		tv.table.SetBackgroundColor(color)
 		tv.table.Redraw()
 	}
+}
+
+// SetEmptyMessage configures centered supporting text for an empty table and
+// mirrors that state into semantic automation metadata.
+func (tv *TableView) SetEmptyMessage(message string) {
+	if tv == nil {
+		return
+	}
+	tv.emptyMessage = strings.TrimSpace(message)
+	if tv.emptyMessage == "" {
+		tv.v.ClearAutomationProperty("emptyMessage")
+	} else {
+		tv.v.SetAutomationProperty("emptyMessage", tv.emptyMessage)
+	}
+	if tv.table != nil {
+		tv.table.Redraw()
+	}
+}
+
+func (tv *TableView) emptyMessageForDrawing() string {
+	if tv == nil || tv.emptyMessage == "" || tv.dataSource == nil || tv.dataSource.NumberOfRows(tv) != 0 {
+		return ""
+	}
+	return tv.emptyMessage
+}
+
+func (tv *TableView) drawEmptyMessage(x, y, w, h int) {
+	message := tv.emptyMessageForDrawing()
+	if message == "" || w <= 0 || h <= tv.headerHeight {
+		return
+	}
+	fltk_bridge.PushClip(x, y+tv.headerHeight, w, h-tv.headerHeight)
+	fltk_bridge.SetDrawColor(fltk_bridge.Color(0x7A849300))
+	fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA, 14)
+	fltk_bridge.Draw(message, x+16, y+tv.headerHeight, w-32, h-tv.headerHeight, fltk_bridge.ALIGN_CENTER|fltk_bridge.ALIGN_CLIP)
+	fltk_bridge.PopClip()
 }
 
 // SetCustomDraw sets a custom cell-drawing function called for every visible row.
@@ -345,6 +383,9 @@ func (tv *TableView) onDrawCell(ctx fltk_bridge.TableContext, row, col int, x, y
 	}
 	if tv.customDraw != nil {
 		tv.customDraw(ctx, row, col, x, y, w, h)
+		if ctx == fltk_bridge.ContextStartPage {
+			tv.drawEmptyMessage(x, y, w, h)
+		}
 		return
 	}
 
@@ -352,6 +393,7 @@ func (tv *TableView) onDrawCell(ctx fltk_bridge.TableContext, row, col int, x, y
 	case fltk_bridge.ContextStartPage:
 		fltk_bridge.SetDrawFont(fltk_bridge.HELVETICA, 14)
 		tv.drawnInPage = make(map[string]bool)
+		tv.drawEmptyMessage(x, y, w, h)
 	case fltk_bridge.ContextEndPage:
 		// Cleanup invisible cells to prevent memory leak and allow reuse
 		for key, cell := range tv.visible {
