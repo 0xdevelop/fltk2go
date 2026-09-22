@@ -229,6 +229,57 @@ func TestRightClickRequestsContextMenuWithoutActivatingRow(t *testing.T) {
 	}
 }
 
+func TestKeyboardContextMenuRequestsSelectedRowWithoutReselectingOrActivating(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: 1}
+	tv := newWithBridgeTable(bridge)
+	tv.SetDataSource(&sliceDataSource{rows: 3})
+	delegate := &recordingDelegate{}
+	tv.SetDelegate(delegate)
+	var requested []TableContextMenuState
+	activated := -1
+	tv.OnContextMenu(func(state TableContextMenuState) { requested = append(requested, state) })
+	tv.OnActivate(func(row int) { activated = row })
+
+	for _, event := range []TableKeyEvent{
+		{Key: fltk_bridge.F10, State: fltk_bridge.SHIFT},
+		{Key: fltk_bridge.MENU},
+	} {
+		if !tv.handleKeyEvent(event) {
+			t.Fatalf("keyboard context-menu event %#v was not handled", event)
+		}
+	}
+	if len(requested) != 2 || requested[0] != (TableContextMenuState{Row: 1, Selected: true}) || requested[1] != requested[0] {
+		t.Fatalf("keyboard context-menu requests = %#v, want selected row 1 twice", requested)
+	}
+	if len(delegate.selected) != 0 {
+		t.Fatalf("keyboard context menu republished selection: %#v", delegate.selected)
+	}
+	if activated != -1 {
+		t.Fatalf("keyboard context menu activated row %d", activated)
+	}
+}
+
+func TestKeyboardContextMenuRejectsModifiedOrInvalidSelection(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: -1}
+	tv := newWithBridgeTable(bridge)
+	tv.SetDataSource(&sliceDataSource{rows: 2})
+	tv.OnContextMenu(func(TableContextMenuState) {})
+
+	for _, event := range []TableKeyEvent{
+		{Key: fltk_bridge.F10},
+		{Key: fltk_bridge.F10, State: fltk_bridge.CTRL | fltk_bridge.SHIFT},
+		{Key: fltk_bridge.MENU, State: fltk_bridge.SHIFT},
+	} {
+		if tv.handleKeyEvent(event) {
+			t.Fatalf("invalid context-menu event %#v was consumed", event)
+		}
+	}
+	bridge.selected = 2
+	if tv.handleKeyEvent(TableKeyEvent{Key: fltk_bridge.MENU}) {
+		t.Fatal("out-of-range selected row opened a context menu")
+	}
+}
+
 func TestTableContextMenuRequiresHandlerAndValidRow(t *testing.T) {
 	bridge := &fakeBridgeTable{selected: 0}
 	tv := newWithBridgeTable(bridge)

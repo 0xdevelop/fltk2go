@@ -17,10 +17,10 @@ type TableColumn struct {
 	Align      fltk_bridge.Align
 }
 
-// TableContextMenuState identifies the data row that received a native
-// right-click. Selected reports whether it was already selected before the
-// request; TableView selects and publishes the clicked row before invoking the
-// owner callback so menu actions have one deterministic target.
+// TableContextMenuState identifies the data row that requested a native context
+// menu. Selected reports whether it was already selected before a pointer
+// request. TableView selects and publishes a right-clicked row before invoking
+// the owner callback; keyboard requests retain the current selection.
 type TableContextMenuState struct {
 	Row      int
 	Selected bool
@@ -254,8 +254,9 @@ func (tv *TableView) OnActivate(handler func(row int)) {
 }
 
 // OnContextMenu registers an application-owned menu request for native
-// right-clicks on data rows. The table owns hit-testing and row selection while
-// the application owns labels, enablement, and actions.
+// right-clicks and the standard Shift+F10/Menu keyboard gestures. The table owns
+// hit-testing and row selection while the application owns labels, enablement,
+// and actions.
 func (tv *TableView) OnContextMenu(handler func(TableContextMenuState)) {
 	if tv != nil {
 		tv.onContextMenu = handler
@@ -293,6 +294,26 @@ func (tv *TableView) ActivateSelected() bool {
 	return true
 }
 
+// RequestContextMenuSelected requests the owner menu for the current valid row
+// without republishing selection or invoking the row's primary action.
+func (tv *TableView) RequestContextMenuSelected() bool {
+	if tv == nil || tv.onContextMenu == nil || tv.dataSource == nil {
+		return false
+	}
+	row := tv.GetSelectedRow()
+	if row < 0 || row >= tv.dataSource.NumberOfRows(tv) {
+		return false
+	}
+	tv.onContextMenu(TableContextMenuState{Row: row, Selected: true})
+	return true
+}
+
+func isContextMenuKey(event TableKeyEvent) bool {
+	modifiers := event.State & (fltk_bridge.SHIFT | fltk_bridge.CTRL | fltk_bridge.ALT | fltk_bridge.META)
+	return (event.Key == fltk_bridge.F10 && modifiers == fltk_bridge.SHIFT) ||
+		(event.Key == fltk_bridge.MENU && modifiers == 0)
+}
+
 func (tv *TableView) handleKey(key int) bool {
 	return tv.handleKeyEvent(TableKeyEvent{Key: key})
 }
@@ -300,6 +321,9 @@ func (tv *TableView) handleKey(key int) bool {
 func (tv *TableView) handleKeyEvent(event TableKeyEvent) bool {
 	if tv != nil && tv.onKey != nil && tv.onKey(event) {
 		return true
+	}
+	if isContextMenuKey(event) {
+		return tv.RequestContextMenuSelected()
 	}
 	if tv == nil || tv.dataSource == nil {
 		return false
