@@ -318,6 +318,14 @@ func (tv *TableView) handleKey(key int) bool {
 	return tv.handleKeyEvent(TableKeyEvent{Key: key})
 }
 
+func (tv *TableView) keyboardPageStep() int {
+	if tv == nil || tv.table == nil || tv.defaultRowHeight <= 0 {
+		return 1
+	}
+	visibleRows := (tv.table.ViewportHeight() - tv.headerHeight) / tv.defaultRowHeight
+	return max(1, visibleRows-1)
+}
+
 func (tv *TableView) handleKeyEvent(event TableKeyEvent) bool {
 	if tv != nil && tv.onKey != nil && tv.onKey(event) {
 		return true
@@ -343,6 +351,16 @@ func (tv *TableView) handleKeyEvent(event TableKeyEvent) bool {
 		return tv.SelectRow(max(0, selected-1))
 	case fltk_bridge.DOWN:
 		return tv.SelectRow(min(rows-1, selected+1))
+	case fltk_bridge.PAGE_UP:
+		if selected < 0 {
+			return tv.SelectRow(0)
+		}
+		return tv.SelectRow(max(0, selected-tv.keyboardPageStep()))
+	case fltk_bridge.PAGE_DOWN:
+		if selected < 0 {
+			return tv.SelectRow(0)
+		}
+		return tv.SelectRow(min(rows-1, selected+tv.keyboardPageStep()))
 	case fltk_bridge.HOME:
 		return tv.SelectRow(0)
 	case fltk_bridge.END:

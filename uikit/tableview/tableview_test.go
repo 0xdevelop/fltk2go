@@ -10,6 +10,7 @@ type fakeBridgeTable struct {
 	rows       int
 	redraws    int
 	background fltk_bridge.Color
+	height     int
 	draw       func(ctx fltk_bridge.TableContext, row, col int, x, y, w, h int)
 	event      func(TableInteraction) bool
 	selected   int
@@ -34,6 +35,7 @@ func (f *fakeBridgeTable) AllowColumnResizing()                           {}
 func (f *fakeBridgeTable) EnableColumnHeaders()                           {}
 func (f *fakeBridgeTable) SetColumnHeaderHeight(int)                      {}
 func (f *fakeBridgeTable) SetBackgroundColor(color fltk_bridge.Color)     { f.background = color }
+func (f *fakeBridgeTable) ViewportHeight() int                            { return f.height }
 
 func TestSetBackgroundColorForwardsToBridge(t *testing.T) {
 	bridge := &fakeBridgeTable{}
@@ -77,6 +79,11 @@ func TestNativeSelectionGeometryUsesZeroBasedDataIndex(t *testing.T) {
 	for raw, want := range map[int]int{-1: -1, 0: 0, 2: 2} {
 		if got := normalizeSelectedRow(raw); got != want {
 			t.Fatalf("normalizeSelectedRow(%d) = %d, want %d", raw, got, want)
+		}
+	}
+	for row, want := range map[int]int{-1: 0, 0: 0, 2: 2} {
+		if got := nativeTopRowForDataRow(row); got != want {
+			t.Fatalf("nativeTopRowForDataRow(%d) = %d, want %d", row, got, want)
 		}
 	}
 }
@@ -406,6 +413,33 @@ func TestKeyboardNavigationAndActivation(t *testing.T) {
 	}
 	if tv.handleKey('x') {
 		t.Fatal("unhandled key unexpectedly consumed")
+	}
+}
+
+func TestKeyboardPageNavigationMovesByVisibleRowsAndClamps(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: 10, height: 184}
+	tv := newWithBridgeTable(bridge)
+	tv.SetHeaderHeight(24)
+	tv.SetDefaultRowHeight(32)
+	tv.SetDataSource(&sliceDataSource{rows: 20})
+
+	if !tv.handleKey(fltk_bridge.PAGE_DOWN) || bridge.selected != 14 {
+		t.Fatalf("PageDown selected row %d, want 14", bridge.selected)
+	}
+	if !tv.handleKey(fltk_bridge.PAGE_DOWN) || bridge.selected != 18 {
+		t.Fatalf("second PageDown selected row %d, want 18", bridge.selected)
+	}
+	if !tv.handleKey(fltk_bridge.PAGE_DOWN) || bridge.selected != 19 {
+		t.Fatalf("clamped PageDown selected row %d, want 19", bridge.selected)
+	}
+	if !tv.handleKey(fltk_bridge.PAGE_UP) || bridge.selected != 15 {
+		t.Fatalf("PageUp selected row %d, want 15", bridge.selected)
+	}
+
+	bridge.selected = -1
+	tv.selectedRow = -1
+	if !tv.handleKey(fltk_bridge.PAGE_UP) || bridge.selected != 0 {
+		t.Fatalf("PageUp without selection selected row %d, want 0", bridge.selected)
 	}
 }
 

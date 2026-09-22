@@ -94,6 +94,13 @@ func (bt *bridgeTableImpl) SetBackgroundColor(color fltk_bridge.Color) {
 	}
 }
 
+func (bt *bridgeTableImpl) ViewportHeight() int {
+	if bt == nil || bt.table == nil {
+		return 0
+	}
+	return bt.table.H()
+}
+
 // SetEventHandler 设置处理事件的回调函数
 func (bt *bridgeTableImpl) SetEventHandler(fn func(TableInteraction) bool) {
 	bt.eventHandler = fn
@@ -104,9 +111,14 @@ func (bt *bridgeTableImpl) Widget() fltk_bridge.Widget {
 	return bt.table
 }
 
-// ScrollToRow 滚动到指定行
+// ScrollToRow scrolls a zero-based data row to the top of the viewport. FLTK's
+// column header is a separate context and does not offset its row coordinates.
 func (bt *bridgeTableImpl) ScrollToRow(row int) {
-	bt.table.SetTopRow(row + 1) // +1: FLTK row 0 is the column header
+	bt.table.SetTopRow(nativeTopRowForDataRow(row))
+}
+
+func nativeTopRowForDataRow(row int) int {
+	return max(0, row)
 }
 
 func (bt *bridgeTableImpl) TakeFocus() bool {
