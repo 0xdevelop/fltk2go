@@ -326,6 +326,28 @@ func (tv *TableView) keyboardPageStep() int {
 	return max(1, visibleRows-1)
 }
 
+// MoveSelectionByPage moves and reveals the current selection by one visible
+// page. Search and launcher inputs can use this to share the table's exact
+// viewport-aware PageUp/PageDown behavior while retaining text focus.
+func (tv *TableView) MoveSelectionByPage(direction int) bool {
+	if tv == nil || tv.dataSource == nil || direction == 0 {
+		return false
+	}
+	rows := tv.dataSource.NumberOfRows(tv)
+	if rows <= 0 {
+		return false
+	}
+	selected := tv.GetSelectedRow()
+	if selected < 0 {
+		return tv.SelectRow(0)
+	}
+	step := tv.keyboardPageStep()
+	if direction < 0 {
+		return tv.SelectRow(max(0, selected-step))
+	}
+	return tv.SelectRow(min(rows-1, selected+step))
+}
+
 func (tv *TableView) handleKeyEvent(event TableKeyEvent) bool {
 	if tv != nil && tv.onKey != nil && tv.onKey(event) {
 		return true
@@ -352,15 +374,9 @@ func (tv *TableView) handleKeyEvent(event TableKeyEvent) bool {
 	case fltk_bridge.DOWN:
 		return tv.SelectRow(min(rows-1, selected+1))
 	case fltk_bridge.PAGE_UP:
-		if selected < 0 {
-			return tv.SelectRow(0)
-		}
-		return tv.SelectRow(max(0, selected-tv.keyboardPageStep()))
+		return tv.MoveSelectionByPage(-1)
 	case fltk_bridge.PAGE_DOWN:
-		if selected < 0 {
-			return tv.SelectRow(0)
-		}
-		return tv.SelectRow(min(rows-1, selected+tv.keyboardPageStep()))
+		return tv.MoveSelectionByPage(1)
 	case fltk_bridge.HOME:
 		return tv.SelectRow(0)
 	case fltk_bridge.END:

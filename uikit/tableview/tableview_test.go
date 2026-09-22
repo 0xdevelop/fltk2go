@@ -443,6 +443,24 @@ func TestKeyboardPageNavigationMovesByVisibleRowsAndClamps(t *testing.T) {
 	}
 }
 
+func TestMoveSelectionByPageSharesKeyboardNavigation(t *testing.T) {
+	bridge := &fakeBridgeTable{selected: 5, height: 184}
+	tv := newWithBridgeTable(bridge)
+	tv.SetHeaderHeight(24)
+	tv.SetDefaultRowHeight(32)
+	tv.SetDataSource(&sliceDataSource{rows: 20})
+
+	if !tv.MoveSelectionByPage(1) || bridge.selected != 9 {
+		t.Fatalf("forward page selected row %d, want 9", bridge.selected)
+	}
+	if !tv.MoveSelectionByPage(-1) || bridge.selected != 5 {
+		t.Fatalf("backward page selected row %d, want 5", bridge.selected)
+	}
+	if tv.MoveSelectionByPage(0) {
+		t.Fatal("zero-direction page move unexpectedly succeeded")
+	}
+}
+
 func TestOwnerKeyboardHandlerRunsBeforeBuiltInNavigation(t *testing.T) {
 	bridge := &fakeBridgeTable{selected: 1}
 	tv := newWithBridgeTable(bridge)

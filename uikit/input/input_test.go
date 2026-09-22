@@ -84,6 +84,8 @@ func TestInputNavigationMapsNativeSearchKeys(t *testing.T) {
 		{key: fltk_bridge.ENTER_KEY, want: NavigationSubmit, handled: true},
 		{key: fltk_bridge.DOWN, want: NavigationNext, handled: true},
 		{key: fltk_bridge.UP, want: NavigationPrevious, handled: true},
+		{key: fltk_bridge.PAGE_DOWN, want: NavigationPageNext, handled: true},
+		{key: fltk_bridge.PAGE_UP, want: NavigationPagePrevious, handled: true},
 		{key: fltk_bridge.ESCAPE, want: NavigationCancel, handled: false},
 		{key: fltk_bridge.F1, want: NavigationHelp, handled: true},
 	}

@@ -81,11 +81,13 @@ const (
 	FloatInput  = input.FloatInput
 	SecretInput = input.SecretInput
 
-	InputNavigationSubmit   = input.NavigationSubmit
-	InputNavigationNext     = input.NavigationNext
-	InputNavigationPrevious = input.NavigationPrevious
-	InputNavigationCancel   = input.NavigationCancel
-	InputNavigationHelp     = input.NavigationHelp
+	InputNavigationSubmit       = input.NavigationSubmit
+	InputNavigationNext         = input.NavigationNext
+	InputNavigationPrevious     = input.NavigationPrevious
+	InputNavigationPageNext     = input.NavigationPageNext
+	InputNavigationPagePrevious = input.NavigationPagePrevious
+	InputNavigationCancel       = input.NavigationCancel
+	InputNavigationHelp         = input.NavigationHelp
 
 	AxisVertical   = stackview.AxisVertical
 	AxisHorizontal = stackview.AxisHorizontal

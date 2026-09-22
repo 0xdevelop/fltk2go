@@ -26,6 +26,8 @@ const (
 	NavigationSubmit NavigationAction = iota + 1
 	NavigationNext
 	NavigationPrevious
+	NavigationPageNext
+	NavigationPagePrevious
 	NavigationCancel
 	NavigationHelp
 )
@@ -213,8 +215,9 @@ func (in *Input) OnChange(callback func()) {
 	}
 }
 
-// OnNavigation routes Enter, Down, Up, Escape, F1, F3 and Shift+F3 through one
-// native-input callback. F1 lets a focused search field request contextual help.
+// OnNavigation routes Enter, Down, Up, PageDown, PageUp, Escape, F1, F3 and
+// Shift+F3 through one native-input callback. F1 lets a focused search field
+// request contextual help.
 // F3 follows the conventional find-again direction: next without Shift and
 // previous with Shift. Return true when the owner handled the command, or false
 // to let the underlying input retain its normal behavior.
@@ -240,6 +243,10 @@ func (in *Input) dispatchNavigation(key, state int) bool {
 		action = NavigationNext
 	case fltk_bridge.UP:
 		action = NavigationPrevious
+	case fltk_bridge.PAGE_DOWN:
+		action = NavigationPageNext
+	case fltk_bridge.PAGE_UP:
+		action = NavigationPagePrevious
 	case fltk_bridge.ESCAPE:
 		action = NavigationCancel
 	case fltk_bridge.F1:
