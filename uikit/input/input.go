@@ -30,6 +30,8 @@ const (
 	NavigationPagePrevious
 	NavigationFirst
 	NavigationLast
+	NavigationFindNext
+	NavigationFindPrevious
 	NavigationCancel
 	NavigationHelp
 )
@@ -266,9 +268,9 @@ func (in *Input) dispatchNavigation(key, state int) bool {
 		action = NavigationHelp
 	case fltk_bridge.F3:
 		if state&fltk_bridge.SHIFT != 0 {
-			action = NavigationPrevious
+			action = NavigationFindPrevious
 		} else {
-			action = NavigationNext
+			action = NavigationFindNext
 		}
 	default:
 		return false

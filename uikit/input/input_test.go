@@ -121,7 +121,7 @@ func TestInputNavigationMapsFindAgainKeys(t *testing.T) {
 	if !in.dispatchNavigation(fltk_bridge.F3, fltk_bridge.SHIFT) {
 		t.Fatal("Shift+F3 must dispatch previous navigation")
 	}
-	want := []NavigationAction{NavigationNext, NavigationPrevious}
+	want := []NavigationAction{NavigationFindNext, NavigationFindPrevious}
 	if len(actions) != len(want) || actions[0] != want[0] || actions[1] != want[1] {
 		t.Fatalf("find-again actions = %#v, want %#v", actions, want)
 	}
