@@ -78,6 +78,7 @@ func TestInputNavigationMapsNativeSearchKeys(t *testing.T) {
 
 	tests := []struct {
 		key     int
+		state   int
 		want    NavigationAction
 		handled bool
 	}{
@@ -86,11 +87,13 @@ func TestInputNavigationMapsNativeSearchKeys(t *testing.T) {
 		{key: fltk_bridge.UP, want: NavigationPrevious, handled: true},
 		{key: fltk_bridge.PAGE_DOWN, want: NavigationPageNext, handled: true},
 		{key: fltk_bridge.PAGE_UP, want: NavigationPagePrevious, handled: true},
+		{key: fltk_bridge.HOME, state: fltk_bridge.CTRL, want: NavigationFirst, handled: true},
+		{key: fltk_bridge.END, state: fltk_bridge.CTRL, want: NavigationLast, handled: true},
 		{key: fltk_bridge.ESCAPE, want: NavigationCancel, handled: false},
 		{key: fltk_bridge.F1, want: NavigationHelp, handled: true},
 	}
 	for _, test := range tests {
-		if got := in.dispatchNavigation(test.key, 0); got != test.handled {
+		if got := in.dispatchNavigation(test.key, test.state); got != test.handled {
 			t.Fatalf("dispatchNavigation(%d) = %v, want %v", test.key, got, test.handled)
 		}
 	}
@@ -134,6 +137,9 @@ func TestInputNavigationLeavesTextEditingKeysNative(t *testing.T) {
 
 	if in.dispatchNavigation('x', 0) {
 		t.Fatal("ordinary text key must remain available to native input")
+	}
+	if in.dispatchNavigation(fltk_bridge.HOME, 0) || in.dispatchNavigation(fltk_bridge.END, 0) {
+		t.Fatal("plain Home/End must remain available for native caret movement")
 	}
 	if calls != 0 {
 		t.Fatalf("ordinary key invoked navigation callback %d times", calls)

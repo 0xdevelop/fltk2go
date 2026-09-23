@@ -86,6 +86,8 @@ const (
 	InputNavigationPrevious     = input.NavigationPrevious
 	InputNavigationPageNext     = input.NavigationPageNext
 	InputNavigationPagePrevious = input.NavigationPagePrevious
+	InputNavigationFirst        = input.NavigationFirst
+	InputNavigationLast         = input.NavigationLast
 	InputNavigationCancel       = input.NavigationCancel
 	InputNavigationHelp         = input.NavigationHelp
 
